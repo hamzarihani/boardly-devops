@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Boardly Logo</title>
+  <desc id="desc">Rounded square with four board tiles and a check mark.</desc>
+  <defs>
+    <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#brandGradient)" />
+  <rect x="16" y="16" width="12" height="12" rx="3" fill="#ffffff" fill-opacity="0.95" />
+  <rect x="36" y="16" width="12" height="12" rx="3" fill="#ffffff" fill-opacity="0.95" />
+  <rect x="16" y="36" width="12" height="12" rx="3" fill="#ffffff" fill-opacity="0.95" />
+  <path d="M33 41l5 5 10-11" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

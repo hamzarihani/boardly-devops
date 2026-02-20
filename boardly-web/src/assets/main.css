@@ -1,1 +1,19 @@
+@config "../../tailwind.config.js";
 @import "tailwindcss";
+@import "primeicons/primeicons.css";
+
+:root {
+  --color-primary: 99 102 241; /* indigo-500 */
+  --color-background: 248 250 252; /* slate-50 */
+  --color-card: 255 255 255;
+  --color-text: 15 23 42; /* slate-900 */
+  --color-border: 226 232 240; /* slate-200 */
+}
+
+.dark {
+  --color-primary: 129 140 248;
+  --color-background: 15 23 42;
+  --color-card: 30 41 59;
+  --color-text: 248 250 252;
+  --color-border: 51 65 85;
+}
