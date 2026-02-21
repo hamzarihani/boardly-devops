@@ -24,6 +24,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/billing',
+    name: 'billing',
+    component: () => import('@/views/billing-subscription/BillingSubscription.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

@@ -8,10 +8,16 @@ type MessageKey =
   | 'common.language'
   | 'common.openSidebar'
   | 'common.openUserMenu'
+  | 'section.core'
+  | 'section.agile'
+  | 'section.admin'
   | 'nav.dashboard'
   | 'nav.boards'
   | 'nav.tasks'
+  | 'nav.sprints'
+  | 'nav.backlog'
   | 'nav.team'
+  | 'nav.billing-subscription'
   | 'nav.settings'
   | 'menu.dashboard'
   | 'menu.settings'
@@ -38,10 +44,16 @@ const messages: Record<Locale, MessageTable> = {
     'common.language': 'Language',
     'common.openSidebar': 'Open sidebar',
     'common.openUserMenu': 'Open user menu',
+    'section.core': 'Core',
+    'section.agile': 'Agile',
+    'section.admin': 'Administration',
     'nav.dashboard': 'Dashboard',
     'nav.boards': 'Boards',
     'nav.tasks': 'My Tasks',
+    'nav.sprints': 'Sprints',
+    'nav.backlog': 'Backlog',
     'nav.team': 'Team Members',
+    'nav.billing-subscription': 'Billing & Subscription',
     'nav.settings': 'Company Settings',
     'menu.dashboard': 'Dashboard',
     'menu.settings': 'Settings',
@@ -65,10 +77,16 @@ const messages: Record<Locale, MessageTable> = {
     'common.language': 'Langue',
     'common.openSidebar': 'Ouvrir la barre laterale',
     'common.openUserMenu': "Ouvrir le menu d'utilisateur",
+    'section.core': 'Noyau',
+    'section.agile': 'Agile',
+    'section.admin': 'Administration',
     'nav.dashboard': 'Tableau de bord',
     'nav.boards': 'Tableaux',
     'nav.tasks': 'Mes taches',
+    'nav.sprints': 'Sprints',
+    'nav.backlog': 'Backlog',
     'nav.team': "Membres de l'equipe",
+    'nav.billing-subscription': 'Facturation et abonnement',
     'nav.settings': "Parametres de l'entreprise",
     'menu.dashboard': 'Tableau de bord',
     'menu.settings': 'Parametres',
@@ -92,10 +110,16 @@ const messages: Record<Locale, MessageTable> = {
     'common.language': 'اللغة',
     'common.openSidebar': 'فتح الشريط الجانبي',
     'common.openUserMenu': 'فتح قائمة المستخدم',
+    'section.core': 'الاساسي',
+    'section.agile': 'أجايل',
+    'section.admin': 'الإدارة',
     'nav.dashboard': 'لوحة التحكم',
     'nav.boards': 'اللوحات',
     'nav.tasks': 'مهامي',
+    'nav.sprints': 'السبرنت',
+    'nav.backlog': 'الباك لوج',
     'nav.team': 'فريق العمل',
+    'nav.billing-subscription': 'الفوترة والاشتراك',
     'nav.settings': 'إعدادات الشركة',
     'menu.dashboard': 'لوحة التحكم',
     'menu.settings': 'الإعدادات',

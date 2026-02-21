@@ -64,7 +64,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-background text-text">
+  <div class="flex min-h-screen text-text">
     <!-- Sidebar -->
 
 
