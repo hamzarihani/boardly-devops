@@ -30,6 +30,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/settings',
+    name: 'company-settings',
+    component: () => import('@/views/company-settings/CompanySettingsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

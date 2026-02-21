@@ -189,7 +189,7 @@ onUnmounted(() => {
     <AppSidebar></AppSidebar>
     
     <!-- Main -->
-    <div class="p-4 sm:ms-64 mt-14">
+    <div class="p-4 sm:ms-64 mt-14 w-full overflow-auto h-[calc(100vh-56px)]">
       <slot />
     </div>
   </div>
