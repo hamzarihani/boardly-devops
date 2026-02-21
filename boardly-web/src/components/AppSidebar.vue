@@ -2,9 +2,10 @@
 // import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/i18n'
 
 interface MenuItem {
-  label: string
+  labelKey: 'nav.dashboard' | 'nav.boards' | 'nav.tasks' | 'nav.team' | 'nav.settings'
   to: string
   roles: ('ADMIN' | 'MEMBER')[]
   icon: 'dashboard' | 'boards' | 'tasks' | 'team' | 'settings'
@@ -12,13 +13,14 @@ interface MenuItem {
 
 const authStore = useAuthStore()
 const route = useRoute()
+const { t } = useI18n()
 
 const menuItems: MenuItem[] = [
-  { label: 'Dashboard', to: '/dashboard', roles: ['ADMIN', 'MEMBER'], icon: 'dashboard' },
-  { label: 'Boards', to: '/boards', roles: ['ADMIN', 'MEMBER'], icon: 'boards' },
-  { label: 'My Tasks', to: '/my-tasks', roles: ['ADMIN', 'MEMBER'], icon: 'tasks' },
-  { label: 'Team Members', to: '/team', roles: ['ADMIN'], icon: 'team' },
-  { label: 'Company Settings', to: '/settings', roles: ['ADMIN'], icon: 'settings' }
+  { labelKey: 'nav.dashboard', to: '/dashboard', roles: ['ADMIN', 'MEMBER'], icon: 'dashboard' },
+  { labelKey: 'nav.boards', to: '/boards', roles: ['ADMIN', 'MEMBER'], icon: 'boards' },
+  { labelKey: 'nav.tasks', to: '/my-tasks', roles: ['ADMIN', 'MEMBER'], icon: 'tasks' },
+  { labelKey: 'nav.team', to: '/team', roles: ['ADMIN'], icon: 'team' },
+  { labelKey: 'nav.settings', to: '/settings', roles: ['ADMIN'], icon: 'settings' }
 ]
 
 const iconPaths: Record<MenuItem['icon'], string> = {
@@ -45,7 +47,7 @@ function logout() {
 </script>
 <template>
   <aside id="top-bar-sidebar"
-      class="fixed top-0 left-0 z-40 w-64 h-full transition-transform -translate-x-full sm:translate-x-0"
+      class="fixed top-0 [inset-inline-start:0] z-40 w-64 h-full transition-transform -translate-x-full rtl:translate-x-0 sm:translate-x-0"
       aria-label="Sidebar">
     <div class="flex flex-col justify-between h-full px-3 py-4 pt-20 overflow-y-auto bg-background border-e border-border">
 
@@ -61,7 +63,7 @@ function logout() {
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path :d="iconPaths[item.icon]" />
         </svg>
-        {{ item.label }}
+        {{ t(item.labelKey) }}
       </RouterLink>
     </nav>
 
@@ -69,7 +71,7 @@ function logout() {
       @click="logout"
       class="mt-6 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-amber-50 cursor-pointer"
     >
-      Logout
+      {{ t('common.logout') }}
     </button>
     </div>
   </aside>
