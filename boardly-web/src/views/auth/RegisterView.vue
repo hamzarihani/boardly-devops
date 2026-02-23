@@ -1,49 +1,76 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import { useI18n } from '@/i18n'
 
 const companyName = ref<string>('')
 const email = ref<string>('')
 const password = ref<string>('')
+const errorMsg = ref<string | null>(null)
+const loading = ref(false)
+const router = useRouter()
+const authStore = useAuthStore()
 const { t } = useI18n()
 
-function handleRegister() {
-  console.log(companyName.value, email.value, password.value)
+async function handleRegister() {
+  try {
+    loading.value = true
+    errorMsg.value = null
+    
+    await authStore.signup(email.value, password.value, companyName.value)
+
+    alert("Signup successful! Please confirm your email and then log in.")
+    router.push('/login')
+  } catch (error: any) {
+    errorMsg.value = error.message
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
   <AuthLayout>
-    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">{{ t('auth.createAccount') }}</h2>
+    <div v-if="errorMsg" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+      {{ errorMsg }}
+    </div>
 
     <form @submit.prevent="handleRegister" class="space-y-4">
       <input
         v-model="companyName"
         type="text"
+        :disabled="loading"
         :placeholder="t('auth.companyName')"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100"
+        required
       />
 
       <input
         v-model="email"
         type="email"
+        :disabled="loading"
         :placeholder="t('auth.email')"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100"
+        required
       />
 
       <input
         v-model="password"
         type="password"
+        :disabled="loading"
         :placeholder="t('auth.password')"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100"
+        required
       />
 
       <button
         type="submit"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors"
+        :disabled="loading"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {{ t('auth.signUp') }}
+        {{ loading ? t('common.loading') : t('auth.signUp') }}
       </button>
     </form>
     <div class="mt-6 text-center text-sm text-gray-600">

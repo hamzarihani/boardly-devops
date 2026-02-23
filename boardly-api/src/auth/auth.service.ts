@@ -51,7 +51,7 @@ export class AuthService {
     if (userError) {
       // Rollback auth and tenant?
       // Supabase doesn't easily support deleting auth users via client without admin privileges
-      throw new BadRequestException(`Failed to create user user: ${userError.message}`);
+      throw new BadRequestException(`Failed to create user: ${userError.message}`);
     }
 
     return {
@@ -69,9 +69,25 @@ export class AuthService {
     });
 
     if (error) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid credentials',error.message);
     }
 
     return data;
+  }
+
+  async getMe(userId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*, tenants(*)')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return user;
   }
 }

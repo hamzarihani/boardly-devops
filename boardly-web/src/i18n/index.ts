@@ -8,6 +8,8 @@ type MessageKey =
   | 'common.language'
   | 'common.openSidebar'
   | 'common.openUserMenu'
+  | 'common.loading'
+  | 'common.error'
   | 'section.core'
   | 'section.agile'
   | 'section.admin'
@@ -44,6 +46,8 @@ const messages: Record<Locale, MessageTable> = {
     'common.language': 'Language',
     'common.openSidebar': 'Open sidebar',
     'common.openUserMenu': 'Open user menu',
+    'common.loading': 'Loading...',
+    'common.error': 'Error',
     'section.core': 'Core',
     'section.agile': 'Agile',
     'section.admin': 'Administration',
@@ -77,6 +81,8 @@ const messages: Record<Locale, MessageTable> = {
     'common.language': 'Langue',
     'common.openSidebar': 'Ouvrir la barre laterale',
     'common.openUserMenu': "Ouvrir le menu d'utilisateur",
+    'common.loading': 'Chargement...',
+    'common.error': 'Erreur',
     'section.core': 'Noyau',
     'section.agile': 'Agile',
     'section.admin': 'Administration',
@@ -110,6 +116,8 @@ const messages: Record<Locale, MessageTable> = {
     'common.language': 'اللغة',
     'common.openSidebar': 'فتح الشريط الجانبي',
     'common.openUserMenu': 'فتح قائمة المستخدم',
+    'common.loading': 'جاري التحميل...',
+    'common.error': 'خطأ',
     'section.core': 'الاساسي',
     'section.agile': 'أجايل',
     'section.admin': 'الإدارة',

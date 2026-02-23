@@ -1,37 +1,76 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-
-export type UserRole = 'ADMIN' | 'MEMBER'
-
-export interface AuthUser {
-  id: string
-  email: string
-  role: UserRole
-}
+import { apiFetch } from '@/lib/api'
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<AuthUser | null>(null)
-  const token = ref<string | null>(localStorage.getItem('access_token'))
+  const user = ref<any | null>(null)
+  const loading = ref(true)
 
-  const isAuthenticated = computed(() => Boolean(token.value))
+  const isAuthenticated = computed(() => Boolean(user.value))
 
-  function setUser(nextUser: AuthUser | null) {
-    user.value = nextUser
-  }
-
-  function setToken(nextToken: string | null) {
-    token.value = nextToken
-    if (nextToken) {
-      localStorage.setItem('access_token', nextToken)
+  async function initialize() {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      loading.value = false
       return
     }
-    localStorage.removeItem('access_token')
+
+    try {
+      loading.value = true
+      const userData = await apiFetch('/auth/me')
+      user.value = userData
+    } catch (error) {
+      console.error('Failed to initialize auth:', error)
+      localStorage.removeItem('access_token')
+      user.value = null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function login(email: string, password: string) {
+    try {
+      loading.value = true
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (data.session?.access_token) {
+        localStorage.setItem('access_token', data.session.access_token)
+        await initialize()
+      }
+      return data
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function signup(email: string, password: string, companyName: string) {
+    try {
+      loading.value = true
+      const data = await apiFetch('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, companyName }),
+      })
+      return data
+    } finally {
+      loading.value = false
+    }
   }
 
   function logout() {
-    setUser(null)
-    setToken(null)
+    localStorage.removeItem('access_token')
+    user.value = null
   }
 
-  return { user, token, isAuthenticated, setUser, setToken, logout }
+  return { 
+    user, 
+    loading, 
+    isAuthenticated, 
+    initialize, 
+    login,
+    signup,
+    logout 
+  }
 })
