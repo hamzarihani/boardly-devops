@@ -5,6 +5,7 @@ const props = defineProps<{
   plans: Plan[]
   billingPeriod: 'monthly' | 'yearly'
   activePlan: Plan['id']
+  loadingPlanId?: Plan['id'] | null
 }>()
 
 const emit = defineEmits<{
@@ -87,10 +88,20 @@ function priceForPlan(plan: Plan) {
         <button
           type="button"
           @click="emit('select-plan', plan.id)"
+          :disabled="Boolean(props.loadingPlanId)"
           class="w-full rounded-lg px-3 py-2 text-sm font-medium border"
-          :class="props.activePlan === plan.id ? 'bg-primary text-white border-primary' : 'bg-background text-text border-border hover:bg-background/80'"
+          :class="[
+            props.activePlan === plan.id ? 'bg-primary text-white border-primary' : 'bg-background text-text border-border hover:bg-background/80',
+            props.loadingPlanId ? 'opacity-70 cursor-not-allowed' : '',
+          ]"
         >
-          {{ props.activePlan === plan.id ? 'Current plan' : (plan.ctaLabel ?? 'Choose plan') }}
+          {{
+            props.loadingPlanId === plan.id
+              ? 'Redirecting...'
+              : props.activePlan === plan.id
+                ? 'Current plan'
+                : (plan.ctaLabel ?? 'Choose plan')
+          }}
         </button>
       </article>
     </div>

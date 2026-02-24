@@ -1,84 +1,44 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import BillingPlans from '@/components/billing/BillingPlans.vue'
 import BillingFilters from '@/components/billing/BillingFilters.vue'
 import BillingHistoryTable from '@/components/billing/BillingHistoryTable.vue'
 import InvoiceDetailsModal from '@/components/billing/InvoiceDetailsModal.vue'
-import type { BillingRow, BillingStatus, Plan } from '@/types/billing'
+import { apiFetch } from '@/lib/api'
+import type {
+  BillingOverview,
+  BillingPeriod,
+  BillingRow,
+  BillingStatus,
+  CurrentSubscription,
+  Plan,
+} from '@/types/billing'
 
-const billingPeriod = ref<'monthly' | 'yearly'>('monthly')
+const route = useRoute()
+const router = useRouter()
+
+const loading = ref(true)
+const checkoutLoadingPlanId = ref<Plan['id'] | null>(null)
+const actionError = ref<string | null>(null)
+const actionSuccess = ref<string | null>(null)
+
+const billingPeriod = ref<BillingPeriod>('monthly')
 const activePlan = ref<Plan['id']>('startup')
-
-const plans: Plan[] = [
-  {
-    id: 'freelancer',
-    name: 'Freelancer',
-    startedAt: '2026-01-10',
-    expiredAt: '2026-02-10',
-    monthlyPrice: 19,
-    yearlyPrice: 190,
-    yearlySavingsLabel: 'Save $38 yearly',
-    description: 'Ideal for consultants and solo operators running client projects.',
-    seats: '1 seat included',
-    storage: '50 GB storage',
-    apiCalls: '20k API calls / month',
-    supportSla: 'Email support (48h SLA)',
-    ctaLabel: 'Start Freelancer',
-    features: ['Unlimited personal boards', 'Custom fields', 'Invoice-ready time tracking'],
-  },
-  {
-    id: 'startup',
-    name: 'Startup',
-    startedAt: '2026-02-11',
-    expiredAt: '2026-03-11',
-    monthlyPrice: 79,
-    yearlyPrice: 790,
-    yearlySavingsLabel: 'Save $158 yearly',
-    description: 'Best for product teams scaling delivery with agile and automation.',
-    seats: 'Up to 15 seats',
-    storage: '500 GB storage',
-    apiCalls: '250k API calls / month',
-    supportSla: 'Priority support (8h SLA)',
-    highlight: true,
-    ctaLabel: 'Upgrade to Startup',
-    features: ['Sprint planning + burndown', 'Advanced roles and permissions', 'Slack + GitHub integrations'],
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    startedAt: '2026-02-21',
-    expiredAt: '2026-03-21',
-    monthlyPrice: 249,
-    yearlyPrice: 2490,
-    yearlySavingsLabel: 'Save $498 yearly',
-    description: 'For large organizations with strict security, compliance, and governance.',
-    seats: 'Unlimited seats',
-    storage: 'Unlimited storage',
-    apiCalls: 'Unlimited API calls',
-    supportSla: 'Dedicated CSM + 1h critical SLA',
-    ctaLabel: 'Contact Sales',
-    features: ['SSO/SAML + SCIM provisioning', 'Audit logs + compliance exports', 'Custom onboarding and migration'],
-  },
-]
-
-const history = ref<BillingRow[]>([
-  { id: 'INV-1024', date: '2026-02-01', plan: 'Startup', amount: 39, status: 'Paid', method: 'Visa **** 4242' },
-  { id: 'INV-1023', date: '2026-01-01', plan: 'Startup', amount: 39, status: 'Paid', method: 'Visa **** 4242' },
-  { id: 'INV-1022', date: '2025-12-01', plan: 'Startup', amount: 39, status: 'Paid', method: 'Visa **** 4242' },
-  { id: 'INV-1021', date: '2025-11-01', plan: 'Startup', amount: 39, status: 'Pending', method: 'Visa **** 4242' },
-  { id: 'INV-1020', date: '2025-10-01', plan: 'Startup', amount: 39, status: 'Failed', method: 'Visa **** 4242' },
-])
+const plans = ref<Plan[]>([])
+const history = ref<BillingRow[]>([])
+const currentSubscription = ref<CurrentSubscription | null>(null)
 
 const statusFilter = ref<'All' | BillingStatus>('All')
 const fromDate = ref('')
 const toDate = ref('')
 const search = ref('')
 const selectedInvoice = ref<BillingRow | null>(null)
-const activePlanDetails = computed<Plan>(() => {
-  const selectedPlan = plans.find((plan) => plan.id === activePlan.value)
+const activePlanDetails = computed<Plan | null>(() => {
+  const selectedPlan = plans.value.find((plan) => plan.id === activePlan.value)
   if (selectedPlan) return selectedPlan
-  return plans[0] as Plan
+  return plans.value[0] ?? null
 })
 
 const filteredHistory = computed(() => {
@@ -95,7 +55,64 @@ const filteredHistory = computed(() => {
 })
 
 function setPlan(planId: Plan['id']) {
-  activePlan.value = planId
+  void startCheckout(planId)
+}
+
+async function loadBillingOverview() {
+  const response = await apiFetch('/billing/overview')
+  const data = response as BillingOverview
+
+  plans.value = data.plans
+  history.value = data.history
+  currentSubscription.value = data.currentSubscription
+
+  if (data.currentSubscription?.planId) {
+    activePlan.value = data.currentSubscription.planId
+  }
+  if (data.currentSubscription?.billingPeriod) {
+    billingPeriod.value = data.currentSubscription.billingPeriod
+  }
+}
+
+async function handleCheckoutConfirmation(sessionId: string) {
+  await apiFetch('/billing/checkout-confirm', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId }),
+  })
+  actionSuccess.value = 'Payment confirmed successfully.'
+}
+
+async function startCheckout(planId: Plan['id']) {
+  actionError.value = null
+  actionSuccess.value = null
+
+  if (planId === activePlan.value) {
+    actionSuccess.value = 'This is already your current plan.'
+    return
+  }
+
+  checkoutLoadingPlanId.value = planId
+  try {
+    const response = await apiFetch('/billing/checkout-session', {
+      method: 'POST',
+      body: JSON.stringify({
+        planId,
+        billingPeriod: billingPeriod.value,
+      }),
+    })
+
+    const checkoutUrl = (response as { checkoutUrl?: string }).checkoutUrl
+    if (!checkoutUrl) {
+      throw new Error('Missing checkout URL from server.')
+    }
+
+    window.location.href = checkoutUrl
+  } catch (error: unknown) {
+    actionError.value =
+      error instanceof Error ? error.message : 'Failed to start Stripe checkout.'
+  } finally {
+    checkoutLoadingPlanId.value = null
+  }
 }
 
 function exportCsv() {
@@ -130,6 +147,32 @@ function openDetails(row: BillingRow) {
 function closeDetails() {
   selectedInvoice.value = null
 }
+
+onMounted(async () => {
+  loading.value = true
+  actionError.value = null
+  actionSuccess.value = null
+
+  try {
+    const checkout = route.query.checkout
+    const sessionId = route.query.session_id
+
+    if (checkout === 'success' && typeof sessionId === 'string') {
+      await handleCheckoutConfirmation(sessionId)
+      await router.replace({ path: '/billing' })
+    } else if (checkout === 'cancel') {
+      actionError.value = 'Checkout was canceled before payment.'
+      await router.replace({ path: '/billing' })
+    }
+
+    await loadBillingOverview()
+  } catch (error: unknown) {
+    actionError.value =
+      error instanceof Error ? error.message : 'Failed to load billing data.'
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -139,15 +182,30 @@ function closeDetails() {
         :plans="plans"
         :billing-period="billingPeriod"
         :active-plan="activePlan"
+        :loading-plan-id="checkoutLoadingPlanId"
         @update:billing-period="billingPeriod = $event"
         @select-plan="setPlan"
       />
+
+      <div
+        v-if="actionSuccess"
+        class="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+      >
+        {{ actionSuccess }}
+      </div>
+
+      <div
+        v-if="actionError"
+        class="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+        {{ actionError }}
+      </div>
 
       <section class="rounded-xl border border-border bg-card p-5">
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 class="text-lg font-semibold text-text">Active Plan</h2>
-            <p class="text-sm text-text/70">{{ activePlanDetails.name }}</p>
+            <p class="text-sm text-text/70">{{ currentSubscription ? (activePlanDetails?.name ?? 'Unknown plan') : 'No active subscription' }}</p>
           </div>
           <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             {{ billingPeriod === 'monthly' ? 'Monthly billing' : 'Yearly billing' }}
@@ -157,11 +215,11 @@ function closeDetails() {
         <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div class="rounded-lg border border-border bg-background p-3">
             <p class="text-xs uppercase tracking-wide text-text/60">Started at</p>
-            <p class="mt-1 text-sm font-medium text-text">{{ activePlanDetails.startedAt }}</p>
+            <p class="mt-1 text-sm font-medium text-text">{{ currentSubscription?.startedAt ?? 'N/A' }}</p>
           </div>
           <div class="rounded-lg border border-border bg-background p-3">
             <p class="text-xs uppercase tracking-wide text-text/60">Expired at</p>
-            <p class="mt-1 text-sm font-medium text-text">{{ activePlanDetails.expiredAt }}</p>
+            <p class="mt-1 text-sm font-medium text-text">{{ currentSubscription?.expiredAt ?? 'N/A' }}</p>
           </div>
         </div>
       </section>
@@ -183,6 +241,13 @@ function closeDetails() {
           :rows="filteredHistory"
           @view-details="openDetails"
         />
+      </section>
+
+      <section
+        v-if="loading"
+        class="rounded-xl border border-border bg-card p-5 text-sm text-text/70"
+      >
+        Loading billing data...
       </section>
     </div>
 
