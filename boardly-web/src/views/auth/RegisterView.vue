@@ -43,7 +43,7 @@ async function handleRegister() {
         type="text"
         :disabled="loading"
         :placeholder="t('auth.companyName')"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100"
+        class="w-full px-4 py-2 bg-background border border-border text-text rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
         required
       />
 
@@ -52,7 +52,7 @@ async function handleRegister() {
         type="email"
         :disabled="loading"
         :placeholder="t('auth.email')"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100"
+        class="w-full px-4 py-2 bg-background border border-border text-text rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
         required
       />
 
@@ -61,21 +61,21 @@ async function handleRegister() {
         type="password"
         :disabled="loading"
         :placeholder="t('auth.password')"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-gray-100"
+        class="w-full px-4 py-2 bg-background border border-border text-text rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
         required
       />
 
       <button
         type="submit"
         :disabled="loading"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {{ loading ? t('common.loading') : t('auth.signUp') }}
       </button>
     </form>
-    <div class="mt-6 text-center text-sm text-gray-600">
+    <div class="mt-6 text-center text-sm text-text/60">
           {{ t('auth.haveAccount') }}
-          <RouterLink to="/login" class="text-indigo-600 hover:text-indigo-500 font-medium">
+          <RouterLink to="/login" class="text-primary hover:text-primary/80 font-medium">
             {{ t('auth.signIn') }}
           </RouterLink>
         </div>

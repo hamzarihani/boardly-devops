@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { useI18n, type Locale } from '@/i18n'
 
+const router = useRouter()
+const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const isUserMenuOpen = ref(false)
 const isLanguageMenuOpen = ref(false)
-const isDark = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
 const languageMenuRef = ref<HTMLElement | null>(null)
 const { t, locale, setLocale } = useI18n()
@@ -20,14 +25,7 @@ function toggleLanguageMenu() {
   if (isLanguageMenuOpen.value) isUserMenuOpen.value = false
 }
 function toggleChangeMode(){
-  isDark.value = !isDark.value
-  if(isDark.value) {
-    document.documentElement.classList.add("dark")
-    localStorage.setItem('theme', 'dark')
-  } else {
-    document.documentElement.classList.remove("dark")
-    localStorage.setItem('theme', 'light')
-  }
+  themeStore.toggleMode()
 }
 
 function handleOutsideClick(event: MouseEvent) {
@@ -48,14 +46,13 @@ function onLocaleChange(value: Locale) {
   isLanguageMenuOpen.value = false
 }
 
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
+}
+
 onMounted(() => {
   document.addEventListener('click', handleOutsideClick)
-  const savedTheme = localStorage.getItem("theme")
-
-  if(savedTheme === "dark") {
-    isDark.value = true
-    document.documentElement.classList.add("dark")
-  }
 })
 
 onUnmounted(() => {
@@ -130,8 +127,8 @@ onUnmounted(() => {
               </div>
             </div>
             <div @click="toggleChangeMode" class="flex items-center justify-center w-8 h-8 rounded-full cursor-pointer hover:bg-blue-600/30">
-              <span v-show="isDark" class="pi pi-sun"></span>
-              <span v-show="!isDark" class="pi pi-moon"></span>
+              <span v-show="themeStore.mode === 'dark'" class="pi pi-sun"></span>
+              <span v-show="themeStore.mode === 'light'" class="pi pi-moon"></span>
             </div>
             <div ref="userMenuRef" class="relative flex items-center ms-3">
               <div>
@@ -150,33 +147,28 @@ onUnmounted(() => {
                 class="absolute [inset-inline-end:0] top-10 z-50 bg-card border border-border rounded-lg shadow-lg w-44"
                 id="dropdown-user">
                 <div class="px-4 py-3 border-b border-border" role="none">
-                  <p class="text-sm font-medium text-text" role="none">
-                    Neil Sims
+                  <p class="text-sm font-medium text-text capitalize" role="none">
+                    {{ authStore.user?.email.split('@')[0] }}
                   </p>
                   <p class="text-sm text-text/80 truncate" role="none">
-                    neil.sims@flowbite.com
+                    {{ authStore.user?.email }}
                   </p>
                 </div>
                 <ul class="p-2 text-sm text-text/80 font-medium" role="none">
                   <li>
-                    <a href="#"
+                    <RouterLink to="/dashboard"
                       class="inline-flex items-center w-full p-2 hover:bg-background/80 hover:text-text rounded"
-                      role="menuitem">{{ t('menu.dashboard') }}</a>
+                      role="menuitem">{{ t('menu.dashboard') }}</RouterLink>
                   </li>
                   <li>
-                    <a href="#"
+                    <RouterLink to="/settings"
                       class="inline-flex items-center w-full p-2 hover:bg-background/80 hover:text-text rounded"
-                      role="menuitem">{{ t('menu.settings') }}</a>
+                      role="menuitem">{{ t('menu.settings') }}</RouterLink>
                   </li>
                   <li>
-                    <a href="#"
-                      class="inline-flex items-center w-full p-2 hover:bg-background/80 hover:text-text rounded"
-                      role="menuitem">{{ t('menu.earnings') }}</a>
-                  </li>
-                  <li>
-                    <a href="#"
-                      class="inline-flex items-center w-full p-2 hover:bg-background/80 hover:text-text rounded"
-                      role="menuitem">{{ t('menu.signOut') }}</a>
+                    <button type="button" @click="handleLogout"
+                      class="inline-flex items-center w-full p-2 hover:bg-background/80 hover:text-text rounded text-start"
+                      role="menuitem">{{ t('menu.signOut') }}</button>
                   </li>
                 </ul>
               </div>

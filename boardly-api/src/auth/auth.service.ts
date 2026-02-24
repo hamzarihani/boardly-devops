@@ -72,7 +72,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials',error.message);
     }
 
-    return data;
+    // Extracting tokens from the session
+    return {
+        accessToken: data.session?.access_token,
+        refreshToken: data.session?.refresh_token,
+        expiresAt: data.session?.expires_at, // Useful for the frontend to know when to refresh
+        user: {
+            id: data.user?.id,
+            email: data.user?.email,
+        },
+    };
   }
 
   async getMe(userId: string) {
@@ -89,5 +98,27 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async refresh(refreshToken: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    return {
+      accessToken: data.session?.access_token,
+      refreshToken: data.session?.refresh_token,
+      expiresAt: data.session?.expires_at,
+      user: {
+        id: data.user?.id,
+        email: data.user?.email,
+      },
+    };
   }
 }

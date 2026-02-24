@@ -12,7 +12,8 @@ html {
 }
 
 :root {
-  --color-primary: 99 102 241; /* indigo-500 */
+  --primary-default: 99 102 241; /* indigo-500 */
+  --color-primary: var(--primary-custom, var(--primary-default));
   --color-background: 248 250 252; /* slate-50 */
   --color-card: 255 255 255;
   --color-text: 15 23 42; /* slate-900 */
@@ -23,7 +24,7 @@ html {
 }
 
 .dark {
-  --color-primary: 129 140 248;
+  --primary-default: 129 140 248;
   --color-background: 15 23 42;
   --color-card: 30 41 59;
   --color-text: 248 250 252;

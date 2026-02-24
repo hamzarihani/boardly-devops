@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted, reactive } from 'vue'
+import { useThemeStore } from '@/stores/theme'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+
+const themeStore = useThemeStore()
 
 const form = reactive({
   companyName: 'Boardly Labs',
@@ -37,7 +40,7 @@ function hexToRgbValue(hex: string) {
 function applyPrimaryColor(hex: string) {
   const rgbValue = hexToRgbValue(hex)
   if (!rgbValue) return
-  document.documentElement.style.setProperty('--color-primary', rgbValue)
+  themeStore.setPrimaryColor(rgbValue)
 }
 
 function toggleWorkDay(day: string) {
@@ -66,13 +69,18 @@ onMounted(() => {
     return
   }
 
-  const parsedSettings = JSON.parse(storedSettings) as Partial<typeof form>
-  form.companyName = parsedSettings.companyName ?? form.companyName
-  form.email = parsedSettings.email ?? form.email
-  form.workStart = parsedSettings.workStart ?? form.workStart
-  form.workEnd = parsedSettings.workEnd ?? form.workEnd
-  form.workDays = parsedSettings.workDays ?? form.workDays
-  form.primaryColor = parsedSettings.primaryColor ?? form.primaryColor
+  try {
+    const parsedSettings = JSON.parse(storedSettings) as Partial<typeof form>
+    form.companyName = parsedSettings.companyName ?? form.companyName
+    form.email = parsedSettings.email ?? form.email
+    form.workStart = parsedSettings.workStart ?? form.workStart
+    form.workEnd = parsedSettings.workEnd ?? form.workEnd
+    form.workDays = parsedSettings.workDays ?? form.workDays
+    form.primaryColor = parsedSettings.primaryColor ?? form.primaryColor
+  } catch {
+    // Ignore invalid localStorage payload and keep defaults.
+  }
+
   applyPrimaryColor(form.primaryColor)
 })
 </script>
