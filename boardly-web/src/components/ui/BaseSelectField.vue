@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 interface SelectOption {
   label: string
@@ -22,14 +22,22 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLButtonElement | null>(null)
+const popoverRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
+const popoverStyle = ref<Record<string, string>>({})
 
 const selectedOption = computed(() => {
   return props.options.find((option) => option.value === props.modelValue) ?? null
 })
 
 function toggleMenu() {
-  isOpen.value = !isOpen.value
+  const nextOpenState = !isOpen.value
+  isOpen.value = nextOpenState
+  if (!nextOpenState) return
+  void nextTick(() => {
+    updatePlacement()
+  })
 }
 
 function closeMenu() {
@@ -52,14 +60,58 @@ function onEscape(event: KeyboardEvent) {
   if (event.key === 'Escape') closeMenu()
 }
 
+function updatePlacement() {
+  if (!triggerRef.value || !popoverRef.value) return
+  const viewportMargin = 8
+  const triggerRect = triggerRef.value.getBoundingClientRect()
+  const desiredWidth = triggerRect.width
+  const maxWidth = Math.max(0, window.innerWidth - viewportMargin * 2)
+  const popoverWidth = Math.min(desiredWidth, maxWidth)
+
+  popoverRef.value.style.width = `${popoverWidth}px`
+
+  let left = triggerRect.left
+  if (left + popoverWidth > window.innerWidth - viewportMargin) {
+    left = window.innerWidth - viewportMargin - popoverWidth
+  }
+  left = Math.max(viewportMargin, left)
+
+  const popoverHeight = popoverRef.value.offsetHeight
+  const bottomSpace = window.innerHeight - triggerRect.bottom - viewportMargin
+  const topSpace = triggerRect.top - viewportMargin
+  const shouldOpenUp = bottomSpace < popoverHeight && topSpace > bottomSpace
+
+  let top = shouldOpenUp
+    ? triggerRect.top - popoverHeight - viewportMargin
+    : triggerRect.bottom + viewportMargin
+
+  const maxTop = Math.max(viewportMargin, window.innerHeight - popoverHeight - viewportMargin)
+  top = Math.min(Math.max(viewportMargin, top), maxTop)
+
+  popoverStyle.value = {
+    width: `${popoverWidth}px`,
+    left: `${Math.round(left)}px`,
+    top: `${Math.round(top)}px`,
+  }
+}
+
+function onViewportChange() {
+  if (!isOpen.value) return
+  updatePlacement()
+}
+
 onMounted(() => {
   document.addEventListener('mousedown', onDocumentClick)
   document.addEventListener('keydown', onEscape)
+  window.addEventListener('resize', onViewportChange)
+  window.addEventListener('scroll', onViewportChange, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', onDocumentClick)
   document.removeEventListener('keydown', onEscape)
+  window.removeEventListener('resize', onViewportChange)
+  window.removeEventListener('scroll', onViewportChange, true)
 })
 </script>
 
@@ -68,6 +120,7 @@ onBeforeUnmount(() => {
     <span v-if="label" class="mb-1 block text-xs font-medium text-text/70">{{ label }}</span>
 
     <button
+      ref="triggerRef"
       type="button"
       @click="toggleMenu"
       class="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm text-text outline-none transition-colors hover:bg-card/60 focus:ring-2 focus:ring-primary/40"
@@ -82,7 +135,9 @@ onBeforeUnmount(() => {
 
     <div
       v-if="isOpen"
-      class="absolute z-30 mt-2 w-full overflow-hidden rounded-lg border border-border bg-card shadow-lg"
+      ref="popoverRef"
+      class="fixed z-50 overflow-hidden rounded-lg border border-border bg-card shadow-lg"
+      :style="popoverStyle"
       role="listbox"
     >
       <button
