@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import { apiFetch } from '@/lib/api'
 
 const themeStore = useThemeStore()
+const loading = ref(true)
+const saving = ref(false)
+const errorMsg = ref<string | null>(null)
+const successMsg = ref<string | null>(null)
 
 const form = reactive({
   companyName: 'Boardly Labs',
-  email: 'ops@boardly.dev',
   workStart: '09:00',
   workEnd: '18:00',
   workDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as string[],
@@ -57,31 +61,69 @@ function selectPrimaryColor(color: string) {
 }
 
 function saveSettings() {
-  localStorage.setItem('company_settings', JSON.stringify(form))
-  applyPrimaryColor(form.primaryColor)
-  console.log('Company settings saved', { ...form })
+  void persistSettings()
 }
 
-onMounted(() => {
-  const storedSettings = localStorage.getItem('company_settings')
-  if (!storedSettings) {
-    applyPrimaryColor(form.primaryColor)
-    return
-  }
-
+async function persistSettings() {
   try {
-    const parsedSettings = JSON.parse(storedSettings) as Partial<typeof form>
-    form.companyName = parsedSettings.companyName ?? form.companyName
-    form.email = parsedSettings.email ?? form.email
-    form.workStart = parsedSettings.workStart ?? form.workStart
-    form.workEnd = parsedSettings.workEnd ?? form.workEnd
-    form.workDays = parsedSettings.workDays ?? form.workDays
-    form.primaryColor = parsedSettings.primaryColor ?? form.primaryColor
-  } catch {
-    // Ignore invalid localStorage payload and keep defaults.
-  }
+    saving.value = true
+    errorMsg.value = null
+    successMsg.value = null
 
-  applyPrimaryColor(form.primaryColor)
+    const payload = {
+      companyName: form.companyName,
+      workStart: form.workStart,
+      workEnd: form.workEnd,
+      workDays: [...form.workDays],
+      primaryColor: form.primaryColor,
+    }
+
+    const response = await apiFetch('/settings/company', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+
+    const updated = response as typeof payload
+    form.companyName = updated.companyName
+    form.workStart = updated.workStart
+    form.workEnd = updated.workEnd
+    form.workDays = updated.workDays
+    form.primaryColor = updated.primaryColor
+
+    localStorage.setItem('company_settings', JSON.stringify(updated))
+    applyPrimaryColor(form.primaryColor)
+    successMsg.value = 'Settings saved successfully.'
+  } catch (error: unknown) {
+    errorMsg.value =
+      error instanceof Error ? error.message : 'Failed to save settings.'
+  } finally {
+    saving.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    loading.value = true
+    errorMsg.value = null
+    successMsg.value = null
+
+    const response = await apiFetch('/settings/company')
+    const data = response as Partial<typeof form>
+
+    form.companyName = data.companyName ?? form.companyName
+    form.workStart = data.workStart ?? form.workStart
+    form.workEnd = data.workEnd ?? form.workEnd
+    form.workDays = data.workDays ?? form.workDays
+    form.primaryColor = data.primaryColor ?? form.primaryColor
+
+    localStorage.setItem('company_settings', JSON.stringify(form))
+  } catch (error: unknown) {
+    errorMsg.value =
+      error instanceof Error ? error.message : 'Failed to load company settings.'
+  } finally {
+    loading.value = false
+    applyPrimaryColor(form.primaryColor)
+  }
 })
 </script>
 
@@ -95,23 +137,35 @@ onMounted(() => {
         </p>
       </section>
 
+      <section
+        v-if="loading"
+        class="rounded-xl border border-border bg-card p-4 text-sm text-text/70"
+      >
+        Loading settings...
+      </section>
+
+      <section
+        v-if="errorMsg"
+        class="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700"
+      >
+        {{ errorMsg }}
+      </section>
+
+      <section
+        v-if="successMsg"
+        class="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-700"
+      >
+        {{ successMsg }}
+      </section>
+
       <section class="rounded-xl border border-border bg-card p-5">
         <h2 class="text-lg font-semibold text-text">Company Profile</h2>
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="mt-4 grid grid-cols-1 gap-4">
           <label class="block">
             <span class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text/60">Company name</span>
             <input
               v-model="form.companyName"
               type="text"
-              class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40"
-            />
-          </label>
-
-          <label class="block">
-            <span class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text/60">Email</span>
-            <input
-              v-model="form.email"
-              type="email"
               class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40"
             />
           </label>
@@ -185,9 +239,10 @@ onMounted(() => {
           <button
             type="button"
             @click="saveSettings"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+            :disabled="saving"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
-            Save changes
+            {{ saving ? 'Saving...' : 'Save changes' }}
           </button>
         </div>
       </section>

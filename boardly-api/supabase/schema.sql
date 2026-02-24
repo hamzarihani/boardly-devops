@@ -17,9 +17,36 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create Company Settings Table (1 row per tenant)
+CREATE TABLE IF NOT EXISTS company_settings (
+  tenant_id UUID PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  work_start TEXT NOT NULL,
+  work_end TEXT NOT NULL,
+  work_days TEXT[] NOT NULL DEFAULT ARRAY['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+  primary_color TEXT NOT NULL DEFAULT '#6366F1',
+  updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION set_company_settings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_company_settings_updated_at ON company_settings;
+CREATE TRIGGER trg_company_settings_updated_at
+BEFORE UPDATE ON company_settings
+FOR EACH ROW
+EXECUTE PROCEDURE set_company_settings_updated_at();
+
 -- Enable Row Level Security
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE company_settings ENABLE ROW LEVEL SECURITY;
 
 -- Function to check user role without recursion
 -- SECURITY DEFINER allows the function to bypass RLS on the 'users' table
@@ -41,4 +68,7 @@ CREATE POLICY "Allow all for tenants" ON tenants
 
 -- Policies for Users
 CREATE POLICY "Allow all for users" ON users
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow all for company settings" ON company_settings
   FOR ALL USING (true) WITH CHECK (true);
