@@ -109,7 +109,7 @@ function getRowKey(row: TableRow, index: number) {
 </script>
 
 <template>
-  <div class="rounded-lg border border-border overflow-hidden">
+  <div class="rounded-lg overflow-hidden">
     <div class="overflow-auto">
       <table class="w-full text-sm">
         <thead class="bg-background text-text/80">
