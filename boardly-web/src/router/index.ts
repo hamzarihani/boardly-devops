@@ -60,6 +60,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/boards',
+    name: 'boards',
+    component: () => import('@/views/boards/BoardView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

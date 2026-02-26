@@ -23,6 +23,8 @@ type MessageKey =
   | 'nav.settings'
   | 'backlog.title'
   | 'backlog.description'
+  | 'boards.title'
+  | 'boards.description'
   | 'sprints.title'
   | 'sprints.description'
   | 'tasks.title'
@@ -67,6 +69,8 @@ const messages: Record<Locale, MessageTable> = {
     'nav.settings': 'Company Settings',
     'backlog.title': 'Product Backlog',
     'backlog.description': 'Manage and prioritize your team tasks and product features.',
+    'boards.title': 'Kanban Board',
+    'boards.description': 'Visualize your workflow and track task progress across development stages.',
     'sprints.title': 'Active Sprints',
     'sprints.description': 'Plan and track your current development cycles.',
     'tasks.title': 'My Tasks',
@@ -108,6 +112,8 @@ const messages: Record<Locale, MessageTable> = {
     'nav.settings': "Parametres de l'entreprise",
     'backlog.title': 'Backlog de produit',
     'backlog.description': "Gerez et priorisez les taches de votre equipe et les fonctionnalites du produit.",
+    'boards.title': 'Tableau Kanban',
+    'boards.description': 'Visualisez votre flux de travail et suivez la progression des taches.',
     'sprints.title': 'Sprints Actifs',
     'sprints.description': 'Planifiez et suivez vos cycles de developpement actuels.',
     'tasks.title': 'Mes Taches',
@@ -149,6 +155,8 @@ const messages: Record<Locale, MessageTable> = {
     'nav.settings': 'إعدادات الشركة',
     'backlog.title': 'قائمة المهام المؤجلة',
     'backlog.description': 'إدارة وترتيب أولويات مهام الفريق وميزات المنتج.',
+    'boards.title': 'لوحة كانبان',
+    'boards.description': 'تصور سير العمل وتتبع تقدم المهام عبر مراحل التطوير.',
     'sprints.title': 'السبرنت النشط',
     'sprints.description': 'تخطيط وتتبع دورات التطوير الحالية الخاصة بك.',
     'tasks.title': 'مهامي',
