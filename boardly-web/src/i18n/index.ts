@@ -21,6 +21,10 @@ type MessageKey =
   | 'nav.team'
   | 'nav.billing-subscription'
   | 'nav.settings'
+  | 'backlog.title'
+  | 'backlog.description'
+  | 'sprints.title'
+  | 'sprints.description'
   | 'menu.dashboard'
   | 'menu.settings'
   | 'menu.earnings'
@@ -59,6 +63,10 @@ const messages: Record<Locale, MessageTable> = {
     'nav.team': 'Team Members',
     'nav.billing-subscription': 'Billing & Subscription',
     'nav.settings': 'Company Settings',
+    'backlog.title': 'Product Backlog',
+    'backlog.description': 'Manage and prioritize your team tasks and product features.',
+    'sprints.title': 'Active Sprints',
+    'sprints.description': 'Plan and track your current development cycles.',
     'menu.dashboard': 'Dashboard',
     'menu.settings': 'Settings',
     'menu.earnings': 'Earnings',
@@ -94,6 +102,10 @@ const messages: Record<Locale, MessageTable> = {
     'nav.team': "Membres de l'equipe",
     'nav.billing-subscription': 'Facturation et abonnement',
     'nav.settings': "Parametres de l'entreprise",
+    'backlog.title': 'Backlog de produit',
+    'backlog.description': "Gerez et priorisez les taches de votre equipe et les fonctionnalites du produit.",
+    'sprints.title': 'Sprints Actifs',
+    'sprints.description': 'Planifiez et suivez vos cycles de developpement actuels.',
     'menu.dashboard': 'Tableau de bord',
     'menu.settings': 'Parametres',
     'menu.earnings': 'Revenus',
@@ -129,6 +141,10 @@ const messages: Record<Locale, MessageTable> = {
     'nav.team': 'فريق العمل',
     'nav.billing-subscription': 'الفوترة والاشتراك',
     'nav.settings': 'إعدادات الشركة',
+    'backlog.title': 'قائمة المهام المؤجلة',
+    'backlog.description': 'إدارة وترتيب أولويات مهام الفريق وميزات المنتج.',
+    'sprints.title': 'السبرنت النشط',
+    'sprints.description': 'تخطيط وتتبع دورات التطوير الحالية الخاصة بك.',
     'menu.dashboard': 'لوحة التحكم',
     'menu.settings': 'الإعدادات',
     'menu.earnings': 'الأرباح',

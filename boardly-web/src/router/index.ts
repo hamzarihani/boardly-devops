@@ -42,6 +42,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/backlog',
+    name: 'backlog',
+    component: () => import('@/views/backlog/BacklogView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sprints',
+    name: 'sprints',
+    component: () => import('@/views/sprints/SprintsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }
