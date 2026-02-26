@@ -54,6 +54,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/my-tasks',
+    name: 'my-tasks',
+    component: () => import('@/views/my-tasks/MyTasksView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard'
   }

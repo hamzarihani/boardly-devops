@@ -25,6 +25,8 @@ type MessageKey =
   | 'backlog.description'
   | 'sprints.title'
   | 'sprints.description'
+  | 'tasks.title'
+  | 'tasks.description'
   | 'menu.dashboard'
   | 'menu.settings'
   | 'menu.earnings'
@@ -67,6 +69,8 @@ const messages: Record<Locale, MessageTable> = {
     'backlog.description': 'Manage and prioritize your team tasks and product features.',
     'sprints.title': 'Active Sprints',
     'sprints.description': 'Plan and track your current development cycles.',
+    'tasks.title': 'My Tasks',
+    'tasks.description': 'Focus on the work assigned to you and track your progress.',
     'menu.dashboard': 'Dashboard',
     'menu.settings': 'Settings',
     'menu.earnings': 'Earnings',
@@ -106,6 +110,8 @@ const messages: Record<Locale, MessageTable> = {
     'backlog.description': "Gerez et priorisez les taches de votre equipe et les fonctionnalites du produit.",
     'sprints.title': 'Sprints Actifs',
     'sprints.description': 'Planifiez et suivez vos cycles de developpement actuels.',
+    'tasks.title': 'Mes Taches',
+    'tasks.description': 'Concentrez-vous sur le travail qui vous est assigne et suivez vos progres.',
     'menu.dashboard': 'Tableau de bord',
     'menu.settings': 'Parametres',
     'menu.earnings': 'Revenus',
@@ -145,6 +151,8 @@ const messages: Record<Locale, MessageTable> = {
     'backlog.description': 'إدارة وترتيب أولويات مهام الفريق وميزات المنتج.',
     'sprints.title': 'السبرنت النشط',
     'sprints.description': 'تخطيط وتتبع دورات التطوير الحالية الخاصة بك.',
+    'tasks.title': 'مهامي',
+    'tasks.description': 'ركز على العمل الموكل إليك وتتبع تقدمك.',
     'menu.dashboard': 'لوحة التحكم',
     'menu.settings': 'الإعدادات',
     'menu.earnings': 'الأرباح',
