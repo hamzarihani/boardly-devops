@@ -1,0 +1,11 @@
+import { Module } from '@nestjs/common';
+import { TeamController } from './team.controller';
+import { TeamService } from './team.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+
+@Module({
+  imports: [SupabaseModule],
+  controllers: [TeamController],
+  providers: [TeamService],
+})
+export class TeamModule {}

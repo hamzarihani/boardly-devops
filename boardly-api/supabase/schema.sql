@@ -12,10 +12,14 @@ CREATE TABLE IF NOT EXISTS tenants (
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  full_name TEXT,
   email TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('ADMIN', 'MEMBER')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Backward-compatible migration for existing databases
+ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;
 
 -- Create Company Settings Table (1 row per tenant)
 CREATE TABLE IF NOT EXISTS company_settings (

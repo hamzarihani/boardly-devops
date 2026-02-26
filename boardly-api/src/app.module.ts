@@ -6,6 +6,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { SettingsModule } from './settings/settings.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SettingsModule } from './settings/settings.module';
     AuthModule,
     BillingModule,
     SettingsModule,
+    TeamModule,
   ],
   controllers: [AppController],
   providers: [AppService],
