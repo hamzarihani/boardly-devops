@@ -2,36 +2,25 @@
 import { computed, ref } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
+import { useAgileStore, type Task, type WorkflowStatus } from '@/stores/agile'
 import BaseDataTable, { type DataTableColumn } from '@/components/ui/BaseDataTable.vue'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 
-interface Task {
-  id: string
-  title: string
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE'
-  dueDate: string
-  category: string
-}
-
 const { t } = useI18n()
+const agileStore = useAgileStore()
 
-// Mock Data
-const myTasks = ref<Task[]>([
-  { id: '1', title: 'Implement JWT validation', priority: 'HIGH', status: 'DONE', dueDate: '2026-02-25', category: 'Backend' },
-  { id: '2', title: 'Add social login providers', priority: 'MEDIUM', status: 'TODO', dueDate: '2026-03-05', category: 'Backend' },
-  { id: '3', title: 'Fix session timeout bug', priority: 'HIGH', status: 'IN_PROGRESS', dueDate: '2026-02-28', category: 'Bug' },
-  { id: '4', title: 'Design system documentation', priority: 'LOW', status: 'TODO', dueDate: '2026-03-10', category: 'Design' },
-  { id: '5', title: 'Setup CI/CD pipeline for web', priority: 'CRITICAL', status: 'IN_PROGRESS', dueDate: '2026-02-27', category: 'DevOps' },
-  { id: '6', title: 'User profile edit form', priority: 'MEDIUM', status: 'TODO', dueDate: '2026-03-02', category: 'Frontend' },
-  { id: '7', title: 'Integrate i18n with dynamic keys', priority: 'HIGH', status: 'DONE', dueDate: '2026-02-24', category: 'Frontend' },
-])
+// Mock current user
+const currentUserOptions = [
+  { label: 'Hamza R.', value: 'Hamza R.' },
+  { label: 'Jane D.', value: 'Jane D.' },
+  { label: 'Alex K.', value: 'Alex K.' }
+]
+const currentUser = ref('Hamza R.')
 
 // Filters
 const search = ref('')
 const statusFilter = ref('ALL')
-const priorityFilter = ref('ALL')
 
 const statusOptions = [
   { label: 'All Statuses', value: 'ALL' },
@@ -40,30 +29,27 @@ const statusOptions = [
   { label: 'Done', value: 'DONE' },
 ]
 
-const priorityOptions = [
-  { label: 'All Priorities', value: 'ALL' },
-  { label: 'Low', value: 'LOW' },
-  { label: 'Medium', value: 'MEDIUM' },
-  { label: 'High', value: 'HIGH' },
-  { label: 'Critical', value: 'CRITICAL' },
-]
-
 const columns: DataTableColumn[] = [
   { key: 'title', label: 'Task Name', cellClass: 'font-medium text-text' },
-  { key: 'category', label: 'Category' },
-  { key: 'priority', label: 'Priority' },
+  { key: 'storyTitle', label: 'Parent Story' },
   { key: 'status', label: 'Status' },
-  { key: 'dueDate', label: 'Due Date' },
   { key: 'actions', label: '', cellClass: 'text-right' },
 ]
+
+const myTasks = computed(() => {
+  return agileStore.tasks.filter(t => t.assignee === currentUser.value)
+})
+
+const getStoryTitle = (storyId: string) => {
+  return agileStore.stories.find(s => s.id === storyId)?.title || 'Unassigned Story'
+}
 
 const filteredTasks = computed(() => {
   const keyword = search.value.trim().toLowerCase()
   return myTasks.value.filter((task) => {
     const matchesStatus = statusFilter.value === 'ALL' || task.status === statusFilter.value
-    const matchesPriority = priorityFilter.value === 'ALL' || task.priority === priorityFilter.value
     const matchesSearch = !keyword || task.title.toLowerCase().includes(keyword)
-    return matchesStatus && matchesPriority && matchesSearch
+    return matchesStatus && matchesSearch
   })
 })
 
@@ -72,12 +58,25 @@ const isModalOpen = ref(false)
 const isSubmitting = ref(false)
 const isEditing = ref(false)
 const editingTaskId = ref<string | null>(null)
-const formTask = ref<Partial<Task>>({
+
+interface TaskForm {
+  title: string
+  status: WorkflowStatus
+  storyId: string
+}
+
+const formTask = ref<TaskForm>({
   title: '',
-  priority: 'MEDIUM',
   status: 'TODO',
-  dueDate: '',
-  category: 'General',
+  storyId: '',
+})
+
+// Story Dropdown
+const availableStoriesOptions = computed(() => {
+  return agileStore.stories.map(s => ({
+    label: s.title,
+    value: s.id
+  }))
 })
 
 // Confirmation State
@@ -88,16 +87,19 @@ function openModal(task?: Task) {
   if (task) {
     isEditing.value = true
     editingTaskId.value = task.id
-    formTask.value = { ...task }
+    formTask.value = { 
+       title: task.title,
+       status: task.status,
+       storyId: task.storyId
+    }
   } else {
     isEditing.value = false
     editingTaskId.value = null
+    const firstOp = availableStoriesOptions.value[0]
     formTask.value = {
       title: '',
-      priority: 'MEDIUM',
       status: 'TODO',
-      dueDate: new Date().toISOString().split('T')[0],
-      category: 'General',
+      storyId: firstOp ? firstOp.value : '',
     }
   }
   isModalOpen.value = true
@@ -105,36 +107,33 @@ function openModal(task?: Task) {
 
 function closeModal() {
   isModalOpen.value = false
+  setTimeout(() => editingTaskId.value = null, 200)
 }
 
 function saveTask() {
-  if (!formTask.value.title) return
+  if (!formTask.value.title || !formTask.value.storyId) return
   
   isSubmitting.value = true
-  // Mock save
+  
+  const idToEdit = editingTaskId.value
+  const isEdit = isEditing.value
+
+  const payload = {
+    title: formTask.value.title,
+    status: formTask.value.status,
+    assignee: currentUser.value, // Always assign to self from this view
+    storyId: formTask.value.storyId,
+  }
+  
   setTimeout(() => {
-    if (isEditing.value && editingTaskId.value) {
-      const index = myTasks.value.findIndex(t => t.id === editingTaskId.value)
-      if (index !== -1) {
-        myTasks.value[index] = {
-          ...myTasks.value[index],
-          ...formTask.value,
-          id: editingTaskId.value,
-        } as Task
-      }
+    if (isEdit && idToEdit) {
+       agileStore.updateTask(idToEdit, payload)
     } else {
-      myTasks.value.unshift({
-        id: Math.random().toString(36).substr(2, 9),
-        title: formTask.value.title!,
-        priority: formTask.value.priority as any,
-        status: formTask.value.status as any,
-        dueDate: formTask.value.dueDate!,
-        category: formTask.value.category!,
-      })
+       agileStore.addTask(payload)
     }
     isSubmitting.value = false
     closeModal()
-  }, 500)
+  }, 300)
 }
 
 function confirmDelete(task: Task) {
@@ -144,17 +143,10 @@ function confirmDelete(task: Task) {
 
 function deleteTask() {
   if (taskToDelete.value) {
-    myTasks.value = myTasks.value.filter(t => t.id !== taskToDelete.value?.id)
+    agileStore.deleteTask(taskToDelete.value.id)
     isConfirmDeleteOpen.value = false
     taskToDelete.value = null
   }
-}
-
-const priorityColors = {
-  LOW: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  CRITICAL: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 }
 
 const statusColors = {
@@ -170,7 +162,12 @@ const statusColors = {
       <section class="rounded-xl border border-border bg-card p-5">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-text">{{ t('tasks.title') }}</h1>
+             <div class="flex items-center gap-2 mb-1">
+               <h1 class="text-2xl font-bold text-text">{{ t('tasks.title') }}</h1>
+               <span class="bg-primary/10 text-primary text-[10px] uppercase font-black px-2 py-0.5 rounded tracking-widest hidden sm:inline-block">
+                 {{ currentUser }}
+               </span>
+             </div>
             <p class="mt-1 text-sm text-text/70">
               {{ t('tasks.description') }}
             </p>
@@ -185,7 +182,7 @@ const statusColors = {
       </section>
 
       <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-2">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 max-w-3xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 max-w-2xl">
           <input
             v-model="search"
             type="text"
@@ -193,7 +190,6 @@ const statusColors = {
             class="rounded-lg border border-border bg-background px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40"
           />
           <BaseSelectField v-model="statusFilter" :options="statusOptions" />
-          <BaseSelectField v-model="priorityFilter" :options="priorityOptions" />
         </div>
       </div>
 
@@ -205,25 +201,15 @@ const statusColors = {
           :page-size="10"
           empty-text="No tasks assigned to you."
         >
-          <template #cell-priority="{ value }">
-            <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase font-mono tracking-wider text-[10px]" :class="priorityColors[value as keyof typeof priorityColors]">
-              {{ value }}
+          <template #cell-storyTitle="{ row }">
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-background border border-border text-text/50">
+                {{ getStoryTitle((row as any).storyId) }}
             </span>
           </template>
 
           <template #cell-status="{ value }">
             <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="statusColors[value as keyof typeof statusColors]">
               {{ (value as string).replace('_', ' ') }}
-            </span>
-          </template>
-
-          <template #cell-dueDate="{ value }">
-            <span class="text-sm opacity-70">{{ value }}</span>
-          </template>
-          
-          <template #cell-category="{ value }">
-            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-background border border-border text-text/50">
-                {{ value }}
             </span>
           </template>
 
@@ -255,36 +241,28 @@ const statusColors = {
           </div>
 
           <form @submit.prevent="saveTask" class="space-y-4">
+            
             <div class="space-y-1">
-              <label class="text-xs font-semibold uppercase tracking-wider text-text/50">Task Title</label>
+              <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Task Title</label>
               <input v-model="formTask.title" type="text" required placeholder="Enter task title" class="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40" />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="text-xs font-semibold uppercase tracking-wider text-text/50">Priority</label>
-                <BaseSelectField v-model="formTask.priority!" :options="priorityOptions.slice(1)" />
+            <div class="space-y-1">
+              <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Parent Story</label>
+              <div v-if="availableStoriesOptions.length > 0">
+                 <BaseSelectField v-model="formTask.storyId" :options="availableStoriesOptions" />
               </div>
-              <div class="space-y-1">
-                <label class="text-xs font-semibold uppercase tracking-wider text-text/50">Category</label>
-                <input v-model="formTask.category" type="text" placeholder="e.g. Frontend" class="w-full rounded-lg border border-border bg-background px-4 py-2.25 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40 h-[42px]" />
-              </div>
+              <div v-else class="text-sm text-red-500 font-medium">No stories exist. Add some to the backlog.</div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="text-xs font-semibold uppercase tracking-wider text-text/50">Status</label>
+            <div class="space-y-1">
+                <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Status</label>
                 <BaseSelectField v-model="formTask.status!" :options="statusOptions.slice(1)" />
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs font-semibold uppercase tracking-wider text-text/50">Due Date</label>
-                <input v-model="formTask.dueDate" type="date" class="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40 h-[42px]" />
-              </div>
             </div>
 
             <div class="mt-8 flex justify-end gap-3 pt-2">
               <button type="button" @click="closeModal" class="rounded-lg px-4 py-2 text-sm font-medium text-text/70 hover:bg-background transition">Cancel</button>
-              <button type="submit" :disabled="isSubmitting" class="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md disabled:opacity-50">
+              <button type="submit" :disabled="isSubmitting || !formTask.storyId" class="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md disabled:opacity-50">
                 {{ isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Task') }}
               </button>
             </div>

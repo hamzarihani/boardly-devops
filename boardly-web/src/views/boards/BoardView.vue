@@ -1,35 +1,28 @@
+```vue
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, computed } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
+import { useAgileStore, type Task, type WorkflowStatus } from '@/stores/agile'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
-import BaseDatePickerField from '@/components/ui/BaseDatePickerField.vue'
-
-interface BoardTask {
-  id: string
-  title: string
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE'
-  assignee: string | null
-  type: 'STORY' | 'TASK' | 'BUG'
-  dueDate: string | null
-  description?: string
-}
 
 interface Column {
-  id: BoardTask['status']
+  id: WorkflowStatus
   title: string
+  color: string
 }
 
 const { t } = useI18n()
+const agileStore = useAgileStore()
 
 const columns: Column[] = [
-  { id: 'TODO', title: 'To Do' },
-  { id: 'IN_PROGRESS', title: 'In Progress' },
-  { id: 'DONE', title: 'Done' },
+  { id: 'TODO', title: 'To Do', color: 'bg-text/5 text-text/70' },
+  { id: 'IN_PROGRESS', title: 'In Progress', color: 'bg-primary/10 text-primary' },
+  { id: 'DONE', title: 'Done', color: 'bg-emerald-500/10 text-emerald-600' },
 ]
 
+// Team members for mock assignment
 const teamMembers = [
   { label: 'Unassigned', value: '' },
   { label: 'Hamza R.', value: 'Hamza R.' },
@@ -37,279 +30,255 @@ const teamMembers = [
   { label: 'Alex K.', value: 'Alex K.' },
 ]
 
-// Mock Data
-const tasks = ref<BoardTask[]>([
-  { id: '1', title: 'Implement user authentication flow', type: 'STORY', priority: 'HIGH', status: 'IN_PROGRESS', assignee: 'Hamza R.', dueDate: '2026-03-05' },
-  { id: '2', title: 'Fix sidebar navigation bug on mobile', type: 'BUG', priority: 'MEDIUM', status: 'TODO', assignee: 'Jane D.', dueDate: '2026-02-28' },
-  { id: '3', title: 'Draft API documentation', type: 'TASK', priority: 'LOW', status: 'TODO', assignee: null, dueDate: '2026-03-15' },
-  { id: '4', title: 'Refactor database schema for scalability', type: 'STORY', priority: 'CRITICAL', status: 'TODO', assignee: 'Alex K.', dueDate: '2026-04-10' },
-  { id: '5', title: 'Add unit tests for payment service', type: 'TASK', priority: 'MEDIUM', status: 'IN_PROGRESS', assignee: 'Hamza R.', dueDate: '2026-03-01' },
-  { id: '7', title: 'Research OAuth 2.0 integration', type: 'STORY', priority: 'HIGH', status: 'DONE', assignee: 'Jane D.', dueDate: '2026-03-20' },
-  { id: '8', title: 'API performance optimization', type: 'TASK', priority: 'HIGH', status: 'DONE', assignee: 'Hamza R.', dueDate: '2026-02-27' },
-])
-
-// Filters
-const search = ref('')
-const priorityFilter = ref('ALL')
-
-const priorityOptions = [
-  { label: 'All Priorities', value: 'ALL' },
-  { label: 'Low', value: 'LOW' },
-  { label: 'Medium', value: 'MEDIUM' },
-  { label: 'High', value: 'HIGH' },
-  { label: 'Critical', value: 'CRITICAL' },
+// Assignee Filter
+const currentAssigneeFilter = ref('ALL')
+const assigneeOptions = [
+  { label: 'All Assignees', value: 'ALL' },
+  ...teamMembers.filter(m => m.label !== 'Unassigned')
 ]
 
-const filteredTasks = computed(() => {
-  const keyword = search.value.trim().toLowerCase()
-  return tasks.value.filter((task) => {
-    const matchesPriority = priorityFilter.value === 'ALL' || task.priority === priorityFilter.value
-    const matchesSearch = !keyword || task.title.toLowerCase().includes(keyword)
-    return matchesPriority && matchesSearch
-  })
+// Computed tasks for the board
+const boardTasks = computed(() => {
+  let tasks = agileStore.activeSprintTasks
+  if (currentAssigneeFilter.value !== 'ALL') {
+    tasks = tasks.filter(t => t.assignee === currentAssigneeFilter.value)
+  }
+  return tasks
 })
 
-function getTasksByStatus(status: BoardTask['status']) {
-  return filteredTasks.value.filter(task => task.status === status)
+const getTasksByStatus = (status: WorkflowStatus) => {
+  return boardTasks.value.filter((task) => task.status === status)
 }
 
-// Modal & Form State
-const isModalOpen = ref(false)
-const isSubmitting = ref(false)
-const isEditing = ref(false)
-const editingTaskId = ref<string | null>(null)
+// Parent Story Lookup
+const getStoryTitle = (storyId: string) => {
+  const story = agileStore.stories.find(s => s.id === storyId)
+  return story ? story.title : 'Unknown Story'
+}
 
+// Drag & Drop State
+const draggedTaskId = ref<string | null>(null)
+const dragOverColumn = ref<WorkflowStatus | null>(null)
+
+// Drag Handlers
+const onDragStart = (event: DragEvent, task: Task) => {
+  draggedTaskId.value = task.id
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('taskId', task.id)
+    
+    // Ghost image logic
+    const ghost = document.createElement('div')
+    ghost.classList.add('bg-card', 'border', 'border-primary', 'rounded-xl', 'p-4', 'shadow-2xl', 'opacity-90', 'w-64')
+    ghost.innerHTML = `<p class="font-bold text-sm text-text">${task.title}</p>`
+    document.body.appendChild(ghost)
+    event.dataTransfer.setDragImage(ghost, 20, 20)
+    setTimeout(() => document.body.removeChild(ghost), 0)
+  }
+}
+
+const onDragOver = (event: DragEvent, columnId: WorkflowStatus) => {
+  event.preventDefault()
+  if (draggedTaskId.value) {
+    dragOverColumn.value = columnId
+  }
+}
+
+const onDragLeave = (event: DragEvent) => {
+  dragOverColumn.value = null
+}
+
+const onDrop = (event: DragEvent, columnId: WorkflowStatus) => {
+  const taskId = draggedTaskId.value || event.dataTransfer?.getData('taskId')
+  dragOverColumn.value = null
+  draggedTaskId.value = null
+
+  if (taskId) {
+    const task = agileStore.tasks.find((t) => t.id === taskId)
+    if (task && task.status !== columnId) {
+      agileStore.updateTask(taskId, { status: columnId })
+    }
+  }
+}
+
+const onDragEnd = () => {
+  draggedTaskId.value = null
+  dragOverColumn.value = null
+}
+
+// Quick Movement Buttons
+const moveTask = (task: Task, direction: 'next' | 'prev') => {
+  const currentIdx = columns.findIndex(c => c.id === task.status)
+  if (direction === 'next' && currentIdx < columns.length - 1) {
+    const nextCol = columns[currentIdx + 1]
+    if (nextCol) agileStore.updateTask(task.id, { status: nextCol.id })
+  } else if (direction === 'prev' && currentIdx > 0) {
+    const prevCol = columns[currentIdx - 1]
+    if (prevCol) agileStore.updateTask(task.id, { status: prevCol.id })
+  }
+}
+
+// Modal State & Logic
 interface TaskForm {
   title: string
-  type: BoardTask['type']
-  priority: BoardTask['priority']
-  status: BoardTask['status']
+  status: WorkflowStatus
   assignee: string
-  dueDate: string
+  storyId: string
 }
 
+const isModalOpen = ref(false)
+const isEditing = ref(false)
+const editingTaskId = ref<string | null>(null)
+const isSubmitting = ref(false)
 const formTask = ref<TaskForm>({
   title: '',
-  type: 'STORY',
-  priority: 'MEDIUM',
   status: 'TODO',
   assignee: '',
-  dueDate: '',
+  storyId: '',
 })
 
-// Confirmation State
-const isConfirmDeleteOpen = ref(false)
-const taskToDelete = ref<BoardTask | null>(null)
+// Story Dropdown
+const activeStoriesOptions = computed(() => {
+  if (!agileStore.activeSprint) return []
+  return agileStore.getStoriesForSprint(agileStore.activeSprint.id).value.map(s => ({
+    label: s.title,
+    value: s.id
+  }))
+})
 
-function openModal(task?: BoardTask, initialStatus?: BoardTask['status']) {
+const openModal = (task?: Task, defaultStatus: WorkflowStatus = 'TODO') => {
   if (task) {
     isEditing.value = true
     editingTaskId.value = task.id
-    formTask.value = {
-      title: task.title,
-      type: task.type,
-      priority: task.priority,
-      status: task.status,
-      assignee: task.assignee || '',
-      dueDate: task.dueDate || '',
+    formTask.value = { 
+      title: task.title, 
+      status: task.status, 
+      assignee: task.assignee || '', 
+      storyId: task.storyId 
     }
   } else {
     isEditing.value = false
     editingTaskId.value = null
+    const firstOp = activeStoriesOptions.value[0]
     formTask.value = {
       title: '',
-      type: 'STORY',
-      priority: 'MEDIUM',
-      status: initialStatus || 'TODO',
+      status: defaultStatus,
       assignee: '',
-      dueDate: '',
+      storyId: firstOp ? firstOp.value : '',
     }
   }
   isModalOpen.value = true
 }
 
-function closeModal() {
+const closeModal = () => {
   isModalOpen.value = false
+  setTimeout(() => {
+    editingTaskId.value = null
+  }, 200)
 }
 
-function saveTask() {
-  if (!formTask.value.title) return
-  
+const saveTask = () => {
+  if (!formTask.value.title || !formTask.value.storyId) return
   isSubmitting.value = true
+  
+  const idToEdit = editingTaskId.value
+  const isEdit = isEditing.value
+
+  const payload = {
+    title: formTask.value.title,
+    status: formTask.value.status,
+    assignee: formTask.value.assignee || null,
+    storyId: formTask.value.storyId,
+  }
+  
   setTimeout(() => {
-    if (isEditing.value && editingTaskId.value) {
-      const index = tasks.value.findIndex(t => t.id === editingTaskId.value)
-      if (index !== -1) {
-        tasks.value[index] = { ...tasks.value[index], ...formTask.value } as BoardTask
-      }
+    if (isEdit && idToEdit) {
+      agileStore.updateTask(idToEdit, payload)
     } else {
-      tasks.value.push({
-        id: Math.random().toString(36).substr(2, 9),
-        title: formTask.value.title!,
-        type: formTask.value.type as any,
-        priority: formTask.value.priority as any,
-        status: formTask.value.status as any,
-        assignee: formTask.value.assignee || null,
-        dueDate: formTask.value.dueDate || null,
-      })
+      agileStore.addTask(payload)
     }
     isSubmitting.value = false
     closeModal()
-  }, 500)
+  }, 300)
 }
 
-function confirmDelete(task: BoardTask) {
+// Delete Confirmation
+const isConfirmDeleteOpen = ref(false)
+const taskToDelete = ref<Task | null>(null)
+
+const confirmDelete = (task: Task) => {
   taskToDelete.value = task
   isConfirmDeleteOpen.value = true
 }
 
-function deleteTask() {
+const deleteTask = () => {
   if (taskToDelete.value) {
-    tasks.value = tasks.value.filter(t => t.id !== taskToDelete.value?.id)
+    agileStore.deleteTask(taskToDelete.value.id)
     isConfirmDeleteOpen.value = false
     taskToDelete.value = null
   }
-}
-
-// Status Transition Logic
-function moveTask(task: BoardTask, direction: 'next' | 'prev' | BoardTask['status']) {
-  const statusOrder: BoardTask['status'][] = ['TODO', 'IN_PROGRESS', 'DONE']
-  
-  if (direction === 'next' || direction === 'prev') {
-    const currentIndex = statusOrder.indexOf(task.status)
-    let nextIndex = currentIndex + (direction === 'next' ? 1 : -1)
-    if (nextIndex >= 0 && nextIndex < statusOrder.length) {
-      task.status = statusOrder[nextIndex] as BoardTask['status']
-    }
-  } else {
-    task.status = direction
-  }
-}
-
-// Drag & Drop State
-const draggedTaskId = ref<string | null>(null)
-const dragOverColumn = ref<BoardTask['status'] | null>(null)
-
-function onDragStart(event: DragEvent, task: BoardTask) {
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.dropEffect = 'move'
-    event.dataTransfer.setData('text/plain', task.id)
-  }
-  draggedTaskId.value = task.id
-  // Add a slight delay to allow the ghost image to be created
-  setTimeout(() => {
-    const el = document.getElementById(`task-${task.id}`)
-    if (el) el.style.opacity = '0.4'
-  }, 0)
-}
-
-function onDragEnd(event: DragEvent) {
-  const el = document.getElementById(`task-${draggedTaskId.value}`)
-  if (el) el.style.opacity = '1'
-  draggedTaskId.value = null
-  dragOverColumn.value = null
-}
-
-function onDragOver(event: DragEvent, columnId: BoardTask['status']) {
-  event.preventDefault()
-  if (dragOverColumn.value !== columnId) {
-    dragOverColumn.value = columnId
-  }
-}
-
-function onDragLeave(event: DragEvent) {
-  // Only reset if we're leaving the column container entirely
-}
-
-function onDrop(event: DragEvent, columnId: BoardTask['status']) {
-  event.preventDefault()
-  const taskId = event.dataTransfer?.getData('text/plain')
-  if (taskId) {
-    const task = tasks.value.find(t => t.id === taskId)
-    if (task && task.status !== columnId) {
-      moveTask(task, columnId)
-    }
-  }
-  dragOverColumn.value = null
-}
-
-// Visual Helpers
-const priorityColors: Record<BoardTask['priority'], string> = {
-  LOW: 'border-l-4 border-slate-400',
-  MEDIUM: 'border-l-4 border-blue-400',
-  HIGH: 'border-l-4 border-orange-400',
-  CRITICAL: 'border-l-4 border-red-500',
-}
-
-const typeColors: Record<BoardTask['type'], string> = {
-  STORY: 'text-blue-500',
-  TASK: 'text-green-500',
-  BUG: 'text-red-500'
-}
-
-const typeIcons: Record<BoardTask['type'], string> = {
-  STORY: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
-  TASK: 'M9 11l3 3L20 6M4 6h3M4 12h3M4 18h10',
-  BUG: 'M12 22a7 7 0 0 0 7-7M5 15a7 7 0 0 1 7-7m0 0a7 7 0 0 1 7 7M5 15V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10'
 }
 </script>
 
 <template>
   <DashboardLayout>
-    <div class="space-y-6 h-full flex flex-col pb-10">
-      <!-- Header -->
-      <section class="rounded-xl border border-border bg-card p-5 shrink-0 flex items-center justify-between shadow-sm">
+    <div class="h-[calc(100vh-6rem)] flex flex-col w-full min-w-0 pb-4">
+      
+      <!-- Top Header & Filters -->
+      <section class="rounded-xl border border-border bg-card p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 shadow-sm">
         <div>
-          <h1 class="text-2xl font-bold text-text">{{ t('boards.title') }}</h1>
-          <p class="mt-1 text-sm text-text/70">{{ t('boards.description') }}</p>
+           <div class="flex items-center gap-2 mb-1">
+             <h1 class="text-2xl font-bold bg-gradient-to-r from-text to-text/70 bg-clip-text text-transparent">{{ t('boards.title') }}</h1>
+             <span class="bg-primary/10 text-primary text-[10px] uppercase font-black px-2 py-0.5 rounded tracking-widest hidden sm:inline-block">
+               {{ agileStore.activeSprint ? agileStore.activeSprint.name : 'No Active Sprint' }}
+             </span>
+           </div>
+          <p class="text-sm text-text/60 font-medium">Sprint execution and task tracking.</p>
         </div>
-        <button
-          @click="openModal()"
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md h-10 shrink-0 cursor-pointer"
-        >
-          Add Task
-        </button>
+        <div class="flex items-center gap-3">
+          <div class="w-48 hidden sm:block">
+            <BaseSelectField v-model="currentAssigneeFilter" :options="assigneeOptions" />
+          </div>
+          <button
+            v-if="agileStore.activeSprint"
+            @click="openModal()"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md h-10 shrink-0 cursor-pointer"
+          >
+            Add Task
+          </button>
+        </div>
       </section>
 
-      <!-- Toolbar -->
-      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between shrink-0 mb-2 px-1">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 max-w-2xl">
-          <div class="relative group">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 group-focus-within:text-primary transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input
-              v-model="search"
-              type="text"
-              placeholder="Search tasks on board..."
-              class="w-full rounded-lg border border-border bg-background pl-10 pr-4 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40 transition"
-            />
-          </div>
-          <BaseSelectField v-model="priorityFilter" :options="priorityOptions" />
+      <div v-if="!agileStore.activeSprint" class="flex-1 rounded-xl border border-border border-dashed bg-card/50 p-10 flex items-center justify-center flex-col shadow-sm">
+        <div class="w-16 h-16 rounded-full bg-background flex items-center justify-center mb-4 text-text/40 border border-border">
+          <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
+        <p class="font-bold text-text text-lg">Board Offline</p>
+        <p class="text-sm text-text/60 mt-1 max-w-sm text-center">There is no currently active sprint. Start a sprint from the Sprints page.</p>
       </div>
 
-      <!-- Kanban Board -->
-      <div class="flex-1 overflow-x-auto pb-4 custom-scrollbar-h">
-        <div class="flex gap-6 min-h-full">
+      <!-- Kanban Board Layout -->
+      <div v-else class="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar-h flex items-start h-full px-1">
+        <div class="flex gap-6 h-full pb-4 items-stretch min-w-max">
+          
+          <!-- Column Iteration -->
           <div
             v-for="column in columns"
             :key="column.id"
-            class="flex-1 min-w-[320px] max-w-[400px] flex flex-col bg-background/30 rounded-2xl border border-border/40 p-3 shadow-inner transition-all duration-200"
-            :class="{ 'ring-2 ring-primary/40 bg-primary/5 border-primary/20': dragOverColumn === column.id }"
+            class="w-[340px] flex flex-col bg-background/50 border border-border/80 rounded-2xl h-full transition-colors duration-200"
+            :class="dragOverColumn === column.id ? 'ring-2 ring-primary/40 bg-card/80' : ''"
             @dragover="onDragOver($event, column.id)"
-            @dragleave="dragOverColumn = null"
+            @dragleave="onDragLeave"
             @drop="onDrop($event, column.id)"
           >
             <!-- Column Header -->
-            <div class="flex items-center justify-between px-2 mb-4">
-              <div class="flex items-center gap-2">
-                <div class="w-1.5 h-6 rounded-full" :class="{
-                  'bg-amber-500': column.id === 'TODO',
-                  'bg-primary': column.id === 'IN_PROGRESS',
-                  'bg-emerald-500': column.id === 'DONE'
-                }"></div>
-                <h3 class="font-bold text-text/80 uppercase tracking-widest text-xs">{{ column.title }}</h3>
-                <span class="px-2 py-0.5 rounded-full bg-border text-[10px] font-bold text-text/60">
+            <div class="p-4 border-b border-border/50 flex items-center justify-between shrink-0 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full" :class="column.color.split(' ')[0]"></span>
+                <h2 class="font-display font-bold text-sm uppercase tracking-wider text-text/80">
+                  {{ column.title }}
+                </h2>
+                <span class="ml-1 bg-card border border-border text-text/50 text-[10px] font-black px-2 py-0.5 rounded-full">
                   {{ getTasksByStatus(column.id).length }}
                 </span>
               </div>
@@ -318,26 +287,26 @@ const typeIcons: Record<BoardTask['type'], string> = {
               </button>
             </div>
 
-            <!-- Task Cards -->
-            <div class="flex-1 overflow-y-auto overflow-x-hidden space-y-3 px-1 custom-scrollbar">
+            <!-- Task List Area -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
               <!-- Empty State -->
-              <div v-if="getTasksByStatus(column.id).length === 0" class="flex flex-col items-center justify-center py-10 opacity-30 border border-dashed border-border rounded-xl">
-                 <svg class="w-8 h-8 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 11V6m0 0L9 9m3-3 3 3m-9 5v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2"/></svg>
-                 <span class="text-xs">No tasks here</span>
+              <div v-if="getTasksByStatus(column.id).length === 0" class="h-32 rounded-xl border-2 border-dashed border-border/60 flex items-center justify-center text-text/30 text-sm font-medium">
+                Drop tasks here
               </div>
 
+              <!-- Draggable Task Card -->
               <div
                 v-for="task in getTasksByStatus(column.id)"
                 :key="task.id"
                 :id="'task-' + task.id"
                 draggable="true"
-                class="group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-lg hover:ring-1 hover:ring-primary/20 transition-all duration-300 transform hover:-translate-y-1 relative cursor-grab"
-                :class="[priorityColors[task.priority], draggedTaskId === task.id ? 'opacity-40 scale-95' : '']"
+                class="group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-lg hover:ring-1 hover:ring-primary/20 transition-all duration-300 transform hover:-translate-y-1 relative cursor-grab border-l-4 border-l-primary/50"
+                :class="[draggedTaskId === task.id ? 'opacity-40 scale-95' : '']"
                 @dragstart="onDragStart($event, task)"
-                @dragend="onDragEnd($event)"
+                @dragend="onDragEnd()"
               >
-                <!-- Quick Move Controls (Hover only) -->
-                <div class="absolute -right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition duration-200 z-10 translate-x-2 group-hover:translate-x-0">
+                  <!-- Quick Move Actions -->
+                 <div class="absolute -left-3 top-1/2 -translate-y-1/2 flex-col gap-1 hidden group-hover:flex z-10">
                    <button 
                      v-if="column.id !== 'TODO'"
                      @click="moveTask(task, 'prev')"
@@ -352,50 +321,35 @@ const typeIcons: Record<BoardTask['type'], string> = {
                    >
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
                    </button>
-                </div>
+                 </div>
 
-                <div class="flex items-start justify-between mb-2">
-                  <div class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" :class="typeColors[task.type]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path :d="typeIcons[task.type]" />
-                    </svg>
-                    <span class="text-[10px] font-bold text-text/40 tracking-wider">DEV-{{ task.id.slice(0,4) }}</span>
-                  </div>
-                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
+                <!-- Type & Parent Story -->
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold uppercase tracking-widest text-text/50 truncate pr-2">
+                    {{ getStoryTitle(task.storyId) }}
+                  </span>
+                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0">
                     <button @click="openModal(task)" class="p-1 rounded hover:bg-background text-text/40 hover:text-primary transition cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
                     <button @click="confirmDelete(task)" class="p-1 rounded hover:bg-red-500/10 text-text/40 hover:text-red-500 transition cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
                   </div>
                 </div>
                 
-                <h4 class="text-sm font-bold text-text mb-3 line-clamp-2 leading-snug">
-                  {{ task.title }}
-                </h4>
-
-                <div v-if="task.dueDate" class="flex items-center gap-1 text-[10px] text-text/50 mb-4 bg-background px-2 py-1 rounded w-fit border border-border/50">
-                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                  <span>{{ task.dueDate }}</span>
-                </div>
-
-                <div class="flex items-center justify-between pt-1 mt-auto">
-                  <div class="flex -space-x-1.5 translate-x-1 group-hover:translate-x-0 transition-transform">
-                     <div v-if="task.assignee" class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary border-2 border-card z-10" :title="task.assignee">
-                        {{ task.assignee.split(' ').map(n => n[0]).join('') }}
-                     </div>
-                     <div v-else class="w-7 h-7 rounded-full bg-background border border-dashed border-border flex items-center justify-center text-text/20 z-10 shadow-inner">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                     </div>
+                <!-- Title -->
+                <h3 class="text-sm font-semibold text-text leading-tight mb-3">
+                   {{ task.title }}
+                </h3>
+                
+                <!-- Assignee Footer -->
+                <div class="flex items-center justify-between mt-auto pt-2 border-t border-border/40">
+                  <div v-if="task.assignee" class="flex items-center gap-1.5" :title="'Assigned to ' + task.assignee">
+                    <div class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary border border-primary/30 shrink-0">
+                      {{ task.assignee.split(' ').map((n: string) => n[0]).join('') }}
+                    </div>
+                    <span class="text-xs text-text/60 truncate max-w-[120px]">{{ task.assignee.split(' ')[0] }}</span>
                   </div>
-                  <span 
-                    class="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded ring-1 ring-inset shadow-sm"
-                    :class="{
-                       'bg-red-500/10 text-red-500 ring-red-500/20': task.priority === 'CRITICAL',
-                       'bg-orange-500/10 text-orange-500 ring-orange-500/20': task.priority === 'HIGH',
-                       'bg-blue-500/10 text-blue-500 ring-blue-500/20': task.priority === 'MEDIUM',
-                       'bg-slate-500/10 text-slate-400 ring-slate-500/10': task.priority === 'LOW'
-                    }"
-                  >
-                    {{ task.priority }}
-                  </span>
+                  <div v-else class="text-[10px] font-bold text-text/30 tracking-wider">
+                    UNASSIGNED
+                  </div>
                 </div>
               </div>
             </div>
@@ -403,85 +357,92 @@ const typeIcons: Record<BoardTask['type'], string> = {
         </div>
       </div>
 
-      <!-- Add/Edit Modal -->
-       <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md animate-in fade-in duration-300" @click.self="closeModal">
-        <div class="w-full max-w-xl rounded-2xl border border-border bg-card p-8 shadow-2xl animate-in fade-in zoom-in slide-in-from-bottom-8 duration-300 ring-1 ring-white/5">
-          <div class="mb-6 flex items-center justify-between">
-            <h3 class="text-2xl font-bold bg-gradient-to-r from-text to-text/60 bg-clip-text text-transparent italic">
-              {{ isEditing ? 'Refine Task' : 'Propel New Task' }}
-            </h3>
+      <!-- Task Modal -->
+      <div v-if="isModalOpen" class="fixed inset-0 z-[80] flex justify-end bg-black/40 backdrop-blur-[2px] mb:p-4" @click.self="closeModal">
+        <div class="w-full md:w-[480px] h-full md:h-auto md:max-h-full bg-card border-l md:border border-border/50 md:rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.2)] flex flex-col animate-in slide-in-from-right-8 duration-300">
+          
+          <!-- Modal Header -->
+          <div class="px-6 py-5 border-b border-border/50 flex items-center justify-between shrink-0 bg-background/30">
+            <div>
+              <h3 class="text-lg font-black text-text bg-gradient-to-r from-text to-text/60 bg-clip-text text-transparent">
+                {{ isEditing ? 'Edit Task' : 'New Task' }}
+              </h3>
+            </div>
             <button @click="closeModal" class="p-2 rounded-full hover:bg-background text-text/40 hover:text-text transition-all rotate-0 hover:rotate-90">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
 
-          <form @submit.prevent="saveTask" class="space-y-6">
+          <!-- Form Content -->
+          <form @submit.prevent="saveTask" class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
             <div class="space-y-1.5">
-              <label class="text-[10px] font-black uppercase tracking-[0.2em] text-text/40 ml-1">Core Objective</label>
-              <input v-model="formTask.title" type="text" required placeholder="Ex: Revolutionize user onboarding" class="w-full rounded-xl border border-border bg-background px-5 py-3 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all font-medium" />
+              <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Sprint Story</label>
+              <div v-if="activeStoriesOptions.length > 0">
+                 <BaseSelectField v-model="formTask.storyId" :options="activeStoriesOptions" />
+              </div>
+              <div v-else class="text-sm text-red-500 font-medium">Please add stories to this sprint before creating tasks.</div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Task Title</label>
+              <textarea 
+                v-model="formTask.title" 
+                required 
+                rows="3"
+                placeholder="Describe the atomic task..." 
+                class="w-full rounded-xl border border-border/80 bg-background px-4 py-3 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all resize-none shadow-inner"
+              ></textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-5">
               <div class="space-y-1.5">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-text/40 ml-1">Type</label>
-                <BaseSelectField v-model="formTask.type" :options="[
-                  { label: 'Story', value: 'STORY' },
-                  { label: 'Task', value: 'TASK' },
-                  { label: 'Bug', value: 'BUG' },
-                ]" />
-              </div>
-              <div class="space-y-1.5">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-text/40 ml-1">Impact Level</label>
-                <BaseSelectField v-model="formTask.priority" :options="[
-                  { label: 'Low', value: 'LOW' },
-                  { label: 'Medium', value: 'MEDIUM' },
-                  { label: 'High', value: 'HIGH' },
-                  { label: 'Critical', value: 'CRITICAL' },
-                ]" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-5">
-               <div class="space-y-1.5">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-text/40 ml-1">Workflow Stage</label>
-                <BaseSelectField v-model="formTask.status" :options="[
+                <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Stage</label>
+                <BaseSelectField v-model="(formTask as any).status" :options="[
                   { label: 'To Do', value: 'TODO' },
                   { label: 'In Progress', value: 'IN_PROGRESS' },
                   { label: 'Done', value: 'DONE' },
                 ]" />
               </div>
               <div class="space-y-1.5">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-text/40 ml-1">Target Date</label>
-                <BaseDatePickerField v-model="formTask.dueDate!" placeholder="Select milestone" />
+                <label class="text-[10px] uppercase font-black tracking-widest text-text/40">Assign To</label>
+                <BaseSelectField v-model="formTask.assignee" :options="teamMembers" />
               </div>
             </div>
 
-            <div class="space-y-1.5">
-              <label class="text-[10px] font-black uppercase tracking-[0.2em] text-text/40 ml-1">Executor</label>
-                <BaseSelectField v-model="formTask.assignee" :options="teamMembers" />
-            </div>
-
-            <div class="mt-10 flex justify-end gap-4 pt-4 border-t border-border/50">
-              <button type="button" @click="closeModal" class="px-6 py-2.5 text-sm font-bold text-text/40 hover:text-text hover:bg-background rounded-xl transition-all">Abort</button>
-              <button type="submit" :disabled="isSubmitting" class="relative overflow-hidden group px-8 py-2.5 bg-primary rounded-xl text-sm font-black text-primary-foreground shadow-[0_10px_20px_-5px_rgba(var(--primary-rgb),0.5)] hover:shadow-[0_15px_25px_-5px_rgba(var(--primary-rgb),0.6)] active:scale-95 transition-all disabled:opacity-50">
-                <span class="relative z-10">{{ isSubmitting ? 'Syncing...' : (isEditing ? 'Commit Changes' : 'Initialize Task') }}</span>
-                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-              </button>
-            </div>
           </form>
+
+           <!-- Modal Footer -->
+           <div class="px-6 py-4 border-t border-border/50 bg-background/30 shrink-0 flex items-center justify-end gap-3 rounded-b-2xl">
+              <button type="button" @click="closeModal" class="px-6 py-2.5 text-sm font-bold text-text/40 hover:text-text hover:bg-background rounded-xl transition-all">Abort</button>
+              <button type="submit" :disabled="isSubmitting || !formTask.storyId" class="relative overflow-hidden group px-8 py-2.5 bg-primary rounded-xl text-sm font-black text-primary-foreground shadow-[0_10px_20px_-5px_rgba(var(--primary-rgb),0.5)] hover:shadow-[0_15px_25px_-5px_rgba(var(--primary-rgb),0.6)] active:scale-95 transition-all disabled:opacity-50">
+                <span class="relative z-10">{{ isSubmitting ? 'Syncing...' : (isEditing ? 'Commit Changes' : 'Create Task') }}</span>
+              </button>
+           </div>
         </div>
       </div>
 
-      <!-- Delete Confirmation -->
+       <!-- Delete Confirmation -->
       <BaseConfirmDialog
         :show="isConfirmDeleteOpen"
-        title="Liquidate Task"
-        :message="`Are you sure you want to erase '${taskToDelete?.title}'? This action will remove it from the digital workspace forever.`"
-        confirm-text="Erase Forever"
+        title="Delete Task"
+        :message="`Are you sure you want to remove '${taskToDelete?.title}'?`"
+        confirm-text="Eradicate"
         variant="danger"
         @confirm="deleteTask"
         @cancel="isConfirmDeleteOpen = false"
       />
+
     </div>
   </DashboardLayout>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-50); }
+
+.custom-scrollbar-h::-webkit-scrollbar { height: 6px; }
+.custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar-h::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+</style>
