@@ -171,14 +171,67 @@ function deleteTask() {
   }
 }
 
-function moveTask(task: BoardTask, direction: 'next' | 'prev') {
+// Status Transition Logic
+function moveTask(task: BoardTask, direction: 'next' | 'prev' | BoardTask['status']) {
   const statusOrder: BoardTask['status'][] = ['TODO', 'IN_PROGRESS', 'DONE']
-  const currentIndex = statusOrder.indexOf(task.status)
-  let nextIndex = currentIndex + (direction === 'next' ? 1 : -1)
   
-  if (nextIndex >= 0 && nextIndex < statusOrder.length) {
-    task.status = statusOrder[nextIndex] as BoardTask['status']
+  if (direction === 'next' || direction === 'prev') {
+    const currentIndex = statusOrder.indexOf(task.status)
+    let nextIndex = currentIndex + (direction === 'next' ? 1 : -1)
+    if (nextIndex >= 0 && nextIndex < statusOrder.length) {
+      task.status = statusOrder[nextIndex] as BoardTask['status']
+    }
+  } else {
+    task.status = direction
   }
+}
+
+// Drag & Drop State
+const draggedTaskId = ref<string | null>(null)
+const dragOverColumn = ref<BoardTask['status'] | null>(null)
+
+function onDragStart(event: DragEvent, task: BoardTask) {
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.dropEffect = 'move'
+    event.dataTransfer.setData('text/plain', task.id)
+  }
+  draggedTaskId.value = task.id
+  // Add a slight delay to allow the ghost image to be created
+  setTimeout(() => {
+    const el = document.getElementById(`task-${task.id}`)
+    if (el) el.style.opacity = '0.4'
+  }, 0)
+}
+
+function onDragEnd(event: DragEvent) {
+  const el = document.getElementById(`task-${draggedTaskId.value}`)
+  if (el) el.style.opacity = '1'
+  draggedTaskId.value = null
+  dragOverColumn.value = null
+}
+
+function onDragOver(event: DragEvent, columnId: BoardTask['status']) {
+  event.preventDefault()
+  if (dragOverColumn.value !== columnId) {
+    dragOverColumn.value = columnId
+  }
+}
+
+function onDragLeave(event: DragEvent) {
+  // Only reset if we're leaving the column container entirely
+}
+
+function onDrop(event: DragEvent, columnId: BoardTask['status']) {
+  event.preventDefault()
+  const taskId = event.dataTransfer?.getData('text/plain')
+  if (taskId) {
+    const task = tasks.value.find(t => t.id === taskId)
+    if (task && task.status !== columnId) {
+      moveTask(task, columnId)
+    }
+  }
+  dragOverColumn.value = null
 }
 
 // Visual Helpers
@@ -241,7 +294,11 @@ const typeIcons: Record<BoardTask['type'], string> = {
           <div
             v-for="column in columns"
             :key="column.id"
-            class="flex-1 min-w-[320px] max-w-[400px] flex flex-col bg-background/30 rounded-2xl border border-border/40 p-3 shadow-inner"
+            class="flex-1 min-w-[320px] max-w-[400px] flex flex-col bg-background/30 rounded-2xl border border-border/40 p-3 shadow-inner transition-all duration-200"
+            :class="{ 'ring-2 ring-primary/40 bg-primary/5 border-primary/20': dragOverColumn === column.id }"
+            @dragover="onDragOver($event, column.id)"
+            @dragleave="dragOverColumn = null"
+            @drop="onDrop($event, column.id)"
           >
             <!-- Column Header -->
             <div class="flex items-center justify-between px-2 mb-4">
@@ -272,8 +329,12 @@ const typeIcons: Record<BoardTask['type'], string> = {
               <div
                 v-for="task in getTasksByStatus(column.id)"
                 :key="task.id"
+                :id="'task-' + task.id"
+                draggable="true"
                 class="group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-lg hover:ring-1 hover:ring-primary/20 transition-all duration-300 transform hover:-translate-y-1 relative"
-                :class="priorityColors[task.priority]"
+                :class="[priorityColors[task.priority], draggedTaskId === task.id ? 'opacity-40 scale-95' : '']"
+                @dragstart="onDragStart($event, task)"
+                @dragend="onDragEnd($event)"
               >
                 <!-- Quick Move Controls (Hover only) -->
                 <div class="absolute -right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition duration-200 z-10 translate-x-2 group-hover:translate-x-0">

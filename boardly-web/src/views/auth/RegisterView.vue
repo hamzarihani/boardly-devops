@@ -68,7 +68,7 @@ async function handleRegister() {
       <button
         type="submit"
         :disabled="loading"
-        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         {{ loading ? t('common.loading') : t('auth.signUp') }}
       </button>
