@@ -44,6 +44,20 @@ type MessageKey =
   | 'auth.haveAccount'
   | 'auth.signUp'
   | 'dashboard.welcome'
+  | 'dashboard.activeSprints'
+  | 'dashboard.tasksInProgress'
+  | 'dashboard.completionRate'
+  | 'dashboard.recentActivity'
+  | 'dashboard.quickActions'
+  | 'dashboard.createTask'
+  | 'dashboard.inviteMember'
+  | 'dashboard.newSprint'
+  | 'dashboard.activity.created'
+  | 'dashboard.activity.completed'
+  | 'dashboard.activity.commented'
+  | 'dashboard.activity.joined'
+  | 'dashboard.tasksByStatus'
+  | 'dashboard.workload'
 
 type MessageTable = Record<MessageKey, string>
 
@@ -90,6 +104,20 @@ const messages: Record<Locale, MessageTable> = {
     'auth.haveAccount': 'Already have an account?',
     'auth.signUp': 'Sign up',
     'dashboard.welcome': 'Welcome to your SaaS platform',
+    'dashboard.activeSprints': 'Active Sprints',
+    'dashboard.tasksInProgress': 'Tasks in Progress',
+    'dashboard.completionRate': 'Completion Rate',
+    'dashboard.recentActivity': 'Recent Activity',
+    'dashboard.quickActions': 'Quick Actions',
+    'dashboard.createTask': 'Create Task',
+    'dashboard.inviteMember': 'Invite Member',
+    'dashboard.newSprint': 'New Sprint',
+    'dashboard.activity.created': 'created a new task',
+    'dashboard.activity.completed': 'completed a task',
+    'dashboard.activity.commented': 'commented on',
+    'dashboard.activity.joined': 'joined the team',
+    'dashboard.tasksByStatus': 'Tasks by Status',
+    'dashboard.workload': 'Workload Distribution',
   },
   fr: {
     'app.name': 'Boardly DevOps',
@@ -133,6 +161,20 @@ const messages: Record<Locale, MessageTable> = {
     'auth.haveAccount': 'Vous avez deja un compte ?',
     'auth.signUp': "S'inscrire",
     'dashboard.welcome': 'Bienvenue sur votre plateforme SaaS',
+    'dashboard.activeSprints': 'Sprints Actifs',
+    'dashboard.tasksInProgress': 'Tâches en Cours',
+    'dashboard.completionRate': 'Taux d\'Achèvement',
+    'dashboard.recentActivity': 'Activité Récente',
+    'dashboard.quickActions': 'Actions Rapides',
+    'dashboard.createTask': 'Créer une Tâche',
+    'dashboard.inviteMember': 'Inviter un Membre',
+    'dashboard.newSprint': 'Nouveau Sprint',
+    'dashboard.activity.created': 'a créé une nouvelle tâche',
+    'dashboard.activity.completed': 'a terminé une tâche',
+    'dashboard.activity.commented': 'a commenté sur',
+    'dashboard.activity.joined': 'a rejoint l\'équipe',
+    'dashboard.tasksByStatus': 'Tâches par Statut',
+    'dashboard.workload': 'Répartition de la Charge de Travail',
   },
   ar: {
     'app.name': 'Boardly DevOps',
@@ -176,6 +218,20 @@ const messages: Record<Locale, MessageTable> = {
     'auth.haveAccount': 'لديك حساب بالفعل؟',
     'auth.signUp': 'إنشاء حساب',
     'dashboard.welcome': 'مرحبًا بك في منصة SaaS الخاصة بك',
+    'dashboard.activeSprints': 'السبرنت النشطة',
+    'dashboard.tasksInProgress': 'المهام قيد التقدم',
+    'dashboard.completionRate': 'معدل الإنجاز',
+    'dashboard.recentActivity': 'النشاط الأخير',
+    'dashboard.quickActions': 'إجراءات سريعة',
+    'dashboard.createTask': 'إنشاء مهمة',
+    'dashboard.inviteMember': 'دعوة عضو',
+    'dashboard.newSprint': 'سبرنت جديد',
+    'dashboard.activity.created': 'أنشأ مهمة جديدة',
+    'dashboard.activity.completed': 'أكمل مهمة',
+    'dashboard.activity.commented': 'علق على',
+    'dashboard.activity.joined': 'انضم إلى الفريق',
+    'dashboard.tasksByStatus': 'المهام حسب الحالة',
+    'dashboard.workload': 'توزيع عبء العمل',
   },
 }
 
