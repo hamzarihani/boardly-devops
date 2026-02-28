@@ -118,7 +118,7 @@ const priorityColors = {
             <h1 class="text-2xl font-bold text-text">{{ t('sprints.title') }}</h1>
             <p class="mt-1 text-sm text-text/70">{{ t('sprints.description') }}</p>
           </div>
-          <button @click="openModal" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10">
+          <button @click="openModal" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 cursor-pointer">
             Create Sprint
           </button>
         </div>

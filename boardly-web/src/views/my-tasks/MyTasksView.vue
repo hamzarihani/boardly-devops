@@ -177,7 +177,7 @@ const statusColors = {
           </div>
           <button
             @click="openModal()"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 shrink-0"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 shrink-0 cursor-pointer"
           >
             Add Task
           </button>
@@ -229,12 +229,12 @@ const statusColors = {
 
           <template #cell-actions="{ row }">
             <div class="flex items-center justify-end gap-2">
-              <button @click="openModal(row as any)" class="p-1.5 rounded-md hover:bg-background text-text/50 hover:text-primary transition" title="Edit">
+              <button @click="openModal(row as any)" class="p-1.5 rounded-md hover:bg-background text-text/50 hover:text-primary transition cursor-pointer" title="Edit">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               </button>
-              <button @click="confirmDelete(row as any)" class="p-1.5 rounded-md hover:bg-red-500/10 text-text/50 hover:text-red-500 transition" title="Delete">
+              <button @click="confirmDelete(row as any)" class="p-1.5 rounded-md hover:bg-red-500/10 text-text/50 hover:text-red-500 transition cursor-pointer" title="Delete">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
                 </svg>

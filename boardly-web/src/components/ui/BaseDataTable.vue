@@ -174,7 +174,7 @@ function getRowKey(row: TableRow, index: number) {
         <div class="inline-flex items-center gap-1">
           <button
             type="button"
-            class="rounded-md border border-border bg-card px-2.5 py-1.5 text-text disabled:opacity-50"
+            class="rounded-md border border-border bg-card px-2.5 py-1.5 text-text disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             :disabled="currentPage <= 1"
             @click="previousPage"
           >
@@ -183,7 +183,7 @@ function getRowKey(row: TableRow, index: number) {
           <span class="px-2 text-text/70">{{ currentPage }} / {{ totalPages }}</span>
           <button
             type="button"
-            class="rounded-md border border-border bg-card px-2.5 py-1.5 text-text disabled:opacity-50"
+            class="rounded-md border border-border bg-card px-2.5 py-1.5 text-text disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             :disabled="currentPage >= totalPages"
             @click="nextPage"
           >

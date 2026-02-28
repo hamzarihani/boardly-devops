@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
       ref="triggerRef"
       type="button"
       @click="toggleMenu"
-      class="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm text-text outline-none transition-colors hover:bg-card/60 focus:ring-2 focus:ring-primary/40"
+      class="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm text-text outline-none transition-colors hover:bg-card/60 focus:ring-2 focus:ring-primary/40 cursor-pointer"
       :aria-expanded="isOpen ? 'true' : 'false'"
       aria-haspopup="listbox"
     >
@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
         :key="option.value"
         type="button"
         @click="selectOption(option.value)"
-        class="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors"
+        class="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors cursor-pointer"
         :class="option.value === props.modelValue ? 'bg-primary/10 text-primary' : 'text-text hover:bg-background'"
       >
         <span class="truncate">{{ option.label }}</span>

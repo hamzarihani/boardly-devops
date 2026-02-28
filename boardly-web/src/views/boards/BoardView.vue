@@ -266,7 +266,7 @@ const typeIcons: Record<BoardTask['type'], string> = {
         </div>
         <button
           @click="openModal()"
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md h-10 shrink-0"
+          class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md h-10 shrink-0 cursor-pointer"
         >
           Add Task
         </button>
@@ -313,7 +313,7 @@ const typeIcons: Record<BoardTask['type'], string> = {
                   {{ getTasksByStatus(column.id).length }}
                 </span>
               </div>
-              <button @click="openModal(undefined, column.id)" class="p-1 rounded-md hover:bg-white/10 text-text/40 hover:text-text transition">
+              <button @click="openModal(undefined, column.id)" class="p-1 rounded-md hover:bg-white/10 text-text/40 hover:text-text transition cursor-pointer">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
               </button>
             </div>
@@ -331,7 +331,7 @@ const typeIcons: Record<BoardTask['type'], string> = {
                 :key="task.id"
                 :id="'task-' + task.id"
                 draggable="true"
-                class="group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-lg hover:ring-1 hover:ring-primary/20 transition-all duration-300 transform hover:-translate-y-1 relative"
+                class="group bg-card rounded-xl border border-border p-4 shadow-sm hover:shadow-lg hover:ring-1 hover:ring-primary/20 transition-all duration-300 transform hover:-translate-y-1 relative cursor-grab"
                 :class="[priorityColors[task.priority], draggedTaskId === task.id ? 'opacity-40 scale-95' : '']"
                 @dragstart="onDragStart($event, task)"
                 @dragend="onDragEnd($event)"
@@ -341,14 +341,14 @@ const typeIcons: Record<BoardTask['type'], string> = {
                    <button 
                      v-if="column.id !== 'TODO'"
                      @click="moveTask(task, 'prev')"
-                     class="p-1.5 bg-background border border-border rounded-lg shadow-sm text-text/60 hover:text-primary hover:border-primary/40 transition"
+                     class="p-1.5 bg-background border border-border rounded-lg shadow-sm text-text/60 hover:text-primary hover:border-primary/40 transition cursor-pointer"
                    >
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
                    </button>
                    <button 
                      v-if="column.id !== 'DONE'"
                      @click="moveTask(task, 'next')"
-                     class="p-1.5 bg-background border border-border rounded-lg shadow-sm text-text/60 hover:text-primary hover:border-primary/40 transition"
+                     class="p-1.5 bg-background border border-border rounded-lg shadow-sm text-text/60 hover:text-primary hover:border-primary/40 transition cursor-pointer"
                    >
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
                    </button>
@@ -362,8 +362,8 @@ const typeIcons: Record<BoardTask['type'], string> = {
                     <span class="text-[10px] font-bold text-text/40 tracking-wider">DEV-{{ task.id.slice(0,4) }}</span>
                   </div>
                   <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
-                    <button @click="openModal(task)" class="p-1 rounded hover:bg-background text-text/40 hover:text-primary transition"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-                    <button @click="confirmDelete(task)" class="p-1 rounded hover:bg-red-500/10 text-text/40 hover:text-red-500 transition"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
+                    <button @click="openModal(task)" class="p-1 rounded hover:bg-background text-text/40 hover:text-primary transition cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                    <button @click="confirmDelete(task)" class="p-1 rounded hover:bg-red-500/10 text-text/40 hover:text-red-500 transition cursor-pointer"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
                   </div>
                 </div>
                 
@@ -485,14 +485,3 @@ const typeIcons: Record<BoardTask['type'], string> = {
     </div>
   </DashboardLayout>
 </template>
-
-<style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-50); }
-
-.custom-scrollbar-h::-webkit-scrollbar { height: 6px; }
-.custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar-h::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-</style>
