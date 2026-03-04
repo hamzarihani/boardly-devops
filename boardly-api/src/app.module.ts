@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { SettingsModule } from './settings/settings.module';
 import { TeamModule } from './team/team.module';
+import { AgileModule } from './agile/agile.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { TeamModule } from './team/team.module';
     BillingModule,
     SettingsModule,
     TeamModule,
+    AgileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
