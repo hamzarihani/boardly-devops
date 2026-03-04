@@ -76,3 +76,55 @@ CREATE POLICY "Allow all for users" ON users
 
 CREATE POLICY "Allow all for company settings" ON company_settings
   FOR ALL USING (true) WITH CHECK (true);
+
+-- Create Sprints Table
+CREATE TABLE IF NOT EXISTS sprints (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  start_date TIMESTAMP WITH TIME ZONE,
+  end_date TIMESTAMP WITH TIME ZONE,
+  status TEXT NOT NULL CHECK (status IN ('PLANNED', 'ACTIVE', 'COMPLETED')) DEFAULT 'PLANNED',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Stories Table
+CREATE TABLE IF NOT EXISTS stories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  sprint_id UUID REFERENCES sprints(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  priority TEXT NOT NULL CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')) DEFAULT 'MEDIUM',
+  status TEXT NOT NULL CHECK (status IN ('BACKLOG', 'TODO', 'IN_PROGRESS', 'DONE')) DEFAULT 'BACKLOG',
+  estimation INTEGER,
+  assignee TEXT,
+  due_date TIMESTAMP WITH TIME ZONE,
+  type TEXT NOT NULL CHECK (type IN ('STORY', 'BUG')) DEFAULT 'STORY',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Tasks Table
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  story_id UUID REFERENCES stories(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('TODO', 'IN_PROGRESS', 'DONE')) DEFAULT 'TODO',
+  assignee TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for agile tables
+ALTER TABLE sprints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+-- Policies for agile tables
+CREATE POLICY "Allow all for sprints" ON sprints
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow all for stories" ON stories
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow all for tasks" ON tasks
+  FOR ALL USING (true) WITH CHECK (true);
