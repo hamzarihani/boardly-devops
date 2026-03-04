@@ -1,6 +1,6 @@
 ```vue
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
 import { useAgileStore, type Task, type WorkflowStatus } from '@/stores/agile'
@@ -15,6 +15,10 @@ interface Column {
 
 const { t } = useI18n()
 const agileStore = useAgileStore()
+
+onMounted(() => {
+  agileStore.fetchData()
+})
 
 const columns: Column[] = [
   { id: 'TODO', title: 'To Do', color: 'bg-text/5 text-text/70' },
@@ -177,7 +181,7 @@ const closeModal = () => {
   }, 200)
 }
 
-const saveTask = () => {
+async function saveTask() {
   if (!formTask.value.title || !formTask.value.storyId) return
   isSubmitting.value = true
   
@@ -191,15 +195,18 @@ const saveTask = () => {
     storyId: formTask.value.storyId,
   }
   
-  setTimeout(() => {
+  try {
     if (isEdit && idToEdit) {
-      agileStore.updateTask(idToEdit, payload)
+      await agileStore.updateTask(idToEdit, payload)
     } else {
-      agileStore.addTask(payload)
+      await agileStore.addTask(payload)
     }
-    isSubmitting.value = false
     closeModal()
-  }, 300)
+  } catch (error) {
+    console.error('Failed to save task:', error)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Delete Confirmation
@@ -211,9 +218,9 @@ const confirmDelete = (task: Task) => {
   isConfirmDeleteOpen.value = true
 }
 
-const deleteTask = () => {
+async function deleteTask() {
   if (taskToDelete.value) {
-    agileStore.deleteTask(taskToDelete.value.id)
+    await agileStore.deleteTask(taskToDelete.value.id)
     isConfirmDeleteOpen.value = false
     taskToDelete.value = null
   }
@@ -228,7 +235,15 @@ const deleteTask = () => {
       <section class="rounded-xl border border-border bg-card p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 shadow-sm">
         <div>
            <div class="flex items-center gap-2 mb-1">
-             <h1 class="text-2xl font-bold bg-gradient-to-r from-text to-text/70 bg-clip-text text-transparent">{{ t('boards.title') }}</h1>
+             <h1 class="text-2xl font-bold bg-gradient-to-r from-text to-text/70 bg-clip-text text-transparent flex items-center gap-3">
+               {{ t('boards.title') }}
+               <span v-if="agileStore.isLoading" class="text-sm font-normal text-text/50 flex items-center gap-1.5 break-normal">
+                <i class="pi pi-spinner animate-spin"></i> Syncing...
+               </span>
+               <span v-else-if="agileStore.error" class="text-sm font-normal text-red-500">
+                Error loading data
+               </span>
+             </h1>
              <span class="bg-primary/10 text-primary text-[10px] uppercase font-black px-2 py-0.5 rounded tracking-widest hidden sm:inline-block">
                {{ agileStore.activeSprint ? agileStore.activeSprint.name : 'No Active Sprint' }}
              </span>

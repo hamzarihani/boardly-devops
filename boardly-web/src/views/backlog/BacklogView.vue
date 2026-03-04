@@ -5,11 +5,14 @@ import { useI18n } from '@/i18n'
 import { useAgileStore, type Story } from '@/stores/agile'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/ui/BaseDataTable.vue'
-import BaseDatePickerField from '@/components/ui/BaseDatePickerField.vue'
 import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 
 const { t } = useI18n()
 const agileStore = useAgileStore()
+
+onMounted(() => {
+  agileStore.fetchData()
+})
 
 const teamMembers = [
   { label: 'Unassigned', value: '' },
@@ -133,7 +136,7 @@ function closeModal() {
   isModalOpen.value = false
 }
 
-function saveItem() {
+async function saveItem() {
   if (!formItem.value.title) return
   
   isSubmitting.value = true
@@ -149,15 +152,18 @@ function saveItem() {
     sprintId: formItem.value.sprintIdStr || null
   }
 
-  setTimeout(() => {
+  try {
     if (isEditing.value && editingItemId.value) {
-      agileStore.updateStory(editingItemId.value, mappedData)
+      await agileStore.updateStory(editingItemId.value, mappedData)
     } else {
-      agileStore.addStory(mappedData as any)
+      await agileStore.addStory(mappedData as any)
     }
-    isSubmitting.value = false
     closeModal()
-  }, 300)
+  } catch (error) {
+    console.error('Failed to save story:', error)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 function confirmDelete(item: Story) {
@@ -165,9 +171,9 @@ function confirmDelete(item: Story) {
   isConfirmDeleteOpen.value = true
 }
 
-function deleteItem() {
+async function deleteItem() {
   if (itemToDelete.value) {
-    agileStore.deleteStory(itemToDelete.value.id)
+    await agileStore.deleteStory(itemToDelete.value.id)
     isConfirmDeleteOpen.value = false
     itemToDelete.value = null
   }
@@ -202,11 +208,21 @@ const statusColors: Record<Story['status'], string> = {
 <template>
   <DashboardLayout>
     <div class="space-y-6 w-full pb-10">
-      <section class="rounded-xl border border-border bg-card p-5">
-        <h1 class="text-2xl font-bold text-text">{{ t('backlog.title') }}</h1>
-        <p class="mt-1 text-sm text-text/70">
-          {{ t('backlog.description') }} (View & Manage Stories)
-        </p>
+      <section class="flex justify-between items-center rounded-xl border border-border bg-card p-5">
+        <div>
+          <h1 class="text-2xl font-bold text-text flex items-center gap-3">
+            {{ t('backlog.title') }}
+            <span v-if="agileStore.isLoading" class="text-sm font-normal text-text/50 flex items-center gap-1.5 break-normal">
+              <i class="pi pi-spinner animate-spin"></i> Syncing...
+            </span>
+            <span v-else-if="agileStore.error" class="text-sm font-normal text-red-500">
+              Error loading data
+            </span>
+          </h1>
+          <p class="mt-1 text-sm text-text/70">
+            {{ t('backlog.description') }} (View & Manage Stories)
+          </p>
+        </div>
       </section>
 
       <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-2">

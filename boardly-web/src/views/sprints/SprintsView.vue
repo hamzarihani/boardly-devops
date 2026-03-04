@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
 import { useAgileStore } from '@/stores/agile'
@@ -8,6 +8,10 @@ import BaseDatePickerField from '@/components/ui/BaseDatePickerField.vue'
 
 const { t } = useI18n()
 const agileStore = useAgileStore()
+
+onMounted(() => {
+  agileStore.fetchData()
+})
 
 const columns: DataTableColumn[] = [
   { key: 'title', label: 'Story Title', cellClass: 'font-medium text-text' },
@@ -35,19 +39,22 @@ function closeModal() {
   isModalOpen.value = false
 }
 
-function createSprint() {
+async function createSprint() {
   if (!formSprint.value.name || !formSprint.value.startDate || !formSprint.value.endDate) return
   isSubmitting.value = true
-  setTimeout(() => {
-    agileStore.addSprint({
+  try {
+    await agileStore.addSprint({
       name: formSprint.value.name,
       startDate: formSprint.value.startDate,
       endDate: formSprint.value.endDate,
       status: 'PLANNED',
     })
-    isSubmitting.value = false
     closeModal()
-  }, 500)
+  } catch (error) {
+    console.error('Failed to create sprint:', error)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const statusColors = {
@@ -71,7 +78,15 @@ const priorityColors = {
       <section class="rounded-xl border border-border bg-card p-5">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-text">{{ t('sprints.title') }}</h1>
+            <h1 class="text-2xl font-bold text-text flex items-center gap-3">
+              {{ t('sprints.title') }}
+              <span v-if="agileStore.isLoading" class="text-sm font-normal text-text/50 flex items-center gap-1.5 break-normal">
+                <i class="pi pi-spinner animate-spin"></i> Syncing...
+              </span>
+              <span v-else-if="agileStore.error" class="text-sm font-normal text-red-500">
+                Error loading data
+              </span>
+            </h1>
             <p class="mt-1 text-sm text-text/70">{{ t('sprints.description') }} (View & Manage Sprint Cycles)</p>
           </div>
           <button @click="openModal" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 cursor-pointer">

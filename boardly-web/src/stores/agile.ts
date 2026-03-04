@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { apiFetch } from '@/lib/api'
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 export type WorkflowStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
@@ -33,53 +34,31 @@ export interface Sprint {
 }
 
 export const useAgileStore = defineStore('agile', () => {
-  // --- MOCK DATA ---
-  const sprints = ref<Sprint[]>([
-    { id: 's5', name: 'Sprint 5: Core Authentication', startDate: '2026-02-23', endDate: '2026-03-08', status: 'ACTIVE' },
-    { id: 's6', name: 'Sprint 6: User Profiles & Settings', startDate: '2026-03-09', endDate: '2026-03-22', status: 'PLANNED' },
-  ])
+  const sprints = ref<Sprint[]>([])
+  const stories = ref<Story[]>([])
+  const tasks = ref<Task[]>([])
 
-  const stories = ref<Story[]>([
-    { id: 'st1', sprintId: 's5', title: 'Implement user authentication flow', type: 'STORY', priority: 'HIGH', status: 'IN_PROGRESS', estimation: 5, assignee: 'Hamza R.', dueDate: '2026-03-05' },
-    { id: 'st2', sprintId: null, title: 'Fix sidebar navigation bug on mobile', type: 'BUG', priority: 'MEDIUM', status: 'BACKLOG', estimation: 2, assignee: 'Jane D.', dueDate: '2026-02-28' },
-    { id: 'st3', sprintId: 's5', title: 'Design login UI components', type: 'STORY', priority: 'MEDIUM', status: 'DONE', estimation: 3, assignee: 'Alex K.', dueDate: null },
-    { id: 'st4', sprintId: null, title: 'Refactor database schema for scalability', type: 'STORY', priority: 'CRITICAL', status: 'BACKLOG', estimation: 8, assignee: 'Alex K.', dueDate: '2026-04-10' },
-    { id: 'st5', sprintId: 's6', title: 'Add social login providers', type: 'STORY', priority: 'MEDIUM', status: 'TODO', estimation: 5, assignee: 'Hamza R.', dueDate: '2026-03-15' },
-  ])
-
-  const tasks = ref<Task[]>([
-    { id: 't1', storyId: 'st1', title: 'Implement JWT validation', status: 'DONE', assignee: 'Hamza R.' },
-    { id: 't2', storyId: 'st1', title: 'Setup refresh token rotation', status: 'IN_PROGRESS', assignee: 'Jane D.' },
-    { id: 't3', storyId: 'st3', title: 'Create Figma prototypes', status: 'DONE', assignee: 'Alex K.' },
-    { id: 't4', storyId: 'st3', title: 'Translate components to Vue', status: 'DONE', assignee: 'Alex K.' },
-    { id: 't5', storyId: 'st1', title: 'Write unit tests for auth module', status: 'IN_PROGRESS', assignee: 'Hamza R.' },
-    { id: 't6', storyId: 'st5', title: 'Register Google OAuth app', status: 'TODO', assignee: 'Hamza R.' },
-  ])
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
   // --- GETTERS ---
   const backlogItems = computed(() => stories.value.filter((s) => !s.sprintId || s.status === 'BACKLOG'))
   const activeSprint = computed(() => sprints.value.find((s) => s.status === 'ACTIVE'))
   const plannedSprints = computed(() => sprints.value.filter((s) => s.status === 'PLANNED'))
   
-  // Gets all stories associated with a given sprint
   const getStoriesForSprint = (sprintId: string) => computed(() => stories.value.filter((s) => s.sprintId === sprintId))
-  
-  // Gets all tasks associated with a given story
   const getTasksForStory = (storyId: string) => computed(() => tasks.value.filter((t) => t.storyId === storyId))
-
-  // Gets all tasks inside a sprint (by gathering tasks from all stories in that sprint)
+  
   const getTasksForSprint = (sprintId: string) => computed(() => {
     const sprintStoryIds = stories.value.filter((s) => s.sprintId === sprintId).map(s => s.id)
     return tasks.value.filter((t) => sprintStoryIds.includes(t.storyId))
   })
 
-  // Kanban Board Tasks (usually just active sprint)
   const activeSprintTasks = computed(() => {
     if (!activeSprint.value) return []
     return getTasksForSprint(activeSprint.value.id).value
   })
 
-  // Calculate sprint progress based on task completion
   const getSprintProgress = (sprintId: string) => computed(() => {
     const sprintTasks = getTasksForSprint(sprintId).value
     if (sprintTasks.length === 0) return 0
@@ -88,40 +67,100 @@ export const useAgileStore = defineStore('agile', () => {
     return Math.round(((done + inProgress * 0.5) / sprintTasks.length) * 100)
   })
 
-  // --- ACTIONS ---
-  function addSprint(sprint: Omit<Sprint, 'id'>) {
-    sprints.value.push({ id: Math.random().toString(36).substr(2, 9), ...sprint })
-  }
-
-  function addStory(story: Omit<Story, 'id'>) {
-    stories.value.unshift({ id: Math.random().toString(36).substr(2, 9), ...story })
-  }
-
-  function updateStory(id: string, updates: Partial<Story>) {
-    const index = stories.value.findIndex(s => s.id === id)
-    if (index !== -1) {
-      stories.value[index] = { ...stories.value[index], ...updates } as Story
+  // --- API FETCH ---
+  async function fetchData() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const [fetchedSprints, fetchedStories, fetchedTasks] = await Promise.all([
+        apiFetch('/agile/sprints'),
+        apiFetch('/agile/stories'),
+        apiFetch('/agile/tasks')
+      ])
+      
+      sprints.value = (fetchedSprints || []).map((s: any) => ({ ...s, startDate: s.start_date, endDate: s.end_date }))
+      stories.value = (fetchedStories || []).map((s: any) => ({ ...s, sprintId: s.sprint_id, dueDate: s.due_date }))
+      tasks.value = (fetchedTasks || []).map((t: any) => ({ ...t, storyId: t.story_id }))
+    } catch (e: any) {
+      error.value = e.message || 'Failed to fetch agile data'
+      console.error(e)
+    } finally {
+      isLoading.value = false
     }
   }
 
-  function deleteStory(id: string) {
+  // --- ACTIONS ---
+  async function addSprint(sprint: Omit<Sprint, 'id'>) {
+    const payload = { ...sprint, start_date: sprint.startDate, end_date: sprint.endDate }
+    delete (payload as any).startDate
+    delete (payload as any).endDate
+    const added = await apiFetch('/agile/sprints', { method: 'POST', body: JSON.stringify(payload) })
+    sprints.value.unshift({ ...added, startDate: added.start_date, endDate: added.end_date })
+  }
+
+  async function updateSprint(id: string, updates: Partial<Sprint>) {
+    const payload: any = { ...updates }
+    if (payload.startDate) { payload.start_date = payload.startDate; delete payload.startDate }
+    if (payload.endDate) { payload.end_date = payload.endDate; delete payload.endDate }
+    
+    const up = await apiFetch(`/agile/sprints/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
+    const index = sprints.value.findIndex(s => s.id === id)
+    if (index !== -1) {
+      sprints.value[index] = { ...sprints.value[index], ...up, startDate: up.start_date, endDate: up.end_date }
+    }
+  }
+
+  async function deleteSprint(id: string) {
+    await apiFetch(`/agile/sprints/${id}`, { method: 'DELETE' })
+    sprints.value = sprints.value.filter(s => s.id !== id)
+  }
+
+  async function addStory(story: Omit<Story, 'id'>) {
+    const payload = { ...story, sprint_id: story.sprintId, due_date: story.dueDate }
+    delete (payload as any).sprintId
+    delete (payload as any).dueDate
+    const added = await apiFetch('/agile/stories', { method: 'POST', body: JSON.stringify(payload) })
+    stories.value.unshift({ ...added, sprintId: added.sprint_id, dueDate: added.due_date })
+  }
+
+  async function updateStory(id: string, updates: Partial<Story>) {
+    const payload: any = { ...updates }
+    if (payload.hasOwnProperty('sprintId')) { payload.sprint_id = payload.sprintId; delete payload.sprintId }
+    if (payload.hasOwnProperty('dueDate')) { payload.due_date = payload.dueDate; delete payload.dueDate }
+    
+    const up = await apiFetch(`/agile/stories/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
+    const index = stories.value.findIndex(s => s.id === id)
+    if (index !== -1) {
+      stories.value[index] = { ...stories.value[index], ...up, sprintId: up.sprint_id, dueDate: up.due_date }
+    }
+  }
+
+  async function deleteStory(id: string) {
+    await apiFetch(`/agile/stories/${id}`, { method: 'DELETE' })
     stories.value = stories.value.filter(s => s.id !== id)
-    // Cascade delete tasks
     tasks.value = tasks.value.filter(t => t.storyId !== id)
   }
 
-  function addTask(task: Omit<Task, 'id'>) {
-    tasks.value.push({ id: Math.random().toString(36).substr(2, 9), ...task })
+  async function addTask(task: Omit<Task, 'id'>) {
+    const payload = { ...task, story_id: task.storyId }
+    delete (payload as any).storyId
+    const added = await apiFetch('/agile/tasks', { method: 'POST', body: JSON.stringify(payload) })
+    tasks.value.push({ ...added, storyId: added.story_id })
   }
 
-  function updateTask(id: string, updates: Partial<Task>) {
+  async function updateTask(id: string, updates: Partial<Task>) {
+    const payload: any = { ...updates }
+    if (payload.hasOwnProperty('storyId')) { payload.story_id = payload.storyId; delete payload.storyId }
+    
+    const up = await apiFetch(`/agile/tasks/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
     const index = tasks.value.findIndex(t => t.id === id)
     if (index !== -1) {
-      tasks.value[index] = { ...tasks.value[index], ...updates } as Task
+      tasks.value[index] = { ...tasks.value[index], ...up, storyId: up.story_id }
     }
   }
 
-  function deleteTask(id: string) {
+  async function deleteTask(id: string) {
+    await apiFetch(`/agile/tasks/${id}`, { method: 'DELETE' })
     tasks.value = tasks.value.filter(t => t.id !== id)
   }
 
@@ -129,10 +168,13 @@ export const useAgileStore = defineStore('agile', () => {
     sprints,
     stories,
     tasks,
+    isLoading,
+    error,
     backlogItems,
     activeSprint,
     plannedSprints,
     activeSprintTasks,
+    fetchData,
     getStoriesForSprint,
     getTasksForStory,
     getTasksForSprint,
