@@ -252,7 +252,7 @@ const statusColors = {
             <h3 class="text-xl font-bold text-text">
               {{ isEditing ? 'Edit Task' : 'Add New Task' }}
             </h3>
-            <button @click="closeModal" class="text-text/50 hover:text-text transition">✕</button>
+            <button @click="closeModal" class="text-text/50 hover:text-text transition cursor-pointer">✕</button>
           </div>
 
           <form @submit.prevent="saveTask" class="space-y-4">
@@ -276,8 +276,8 @@ const statusColors = {
             </div>
 
             <div class="mt-8 flex justify-end gap-3 pt-2">
-              <button type="button" @click="closeModal" class="rounded-lg px-4 py-2 text-sm font-medium text-text/70 hover:bg-background transition">Cancel</button>
-              <button type="submit" :disabled="isSubmitting || !formTask.storyId" class="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md disabled:opacity-50">
+              <button type="button" @click="closeModal" class="rounded-lg px-4 py-2 text-sm font-medium text-text/70 hover:bg-background transition cursor-pointer">Cancel</button>
+              <button type="submit" :disabled="isSubmitting || !formTask.storyId" class="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition shadow-md disabled:opacity-50 cursor-pointer">
                 {{ isSubmitting ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Task') }}
               </button>
             </div>

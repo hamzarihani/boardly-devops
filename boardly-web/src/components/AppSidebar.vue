@@ -114,12 +114,12 @@ function logout() {
         </section>
       </nav>
 
-      <button
+      <!-- <button
         @click="logout"
         class="mt-6 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-amber-50 cursor-pointer"
       >
         {{ t('common.logout') }}
-      </button>
+      </button> -->
     </div>
   </aside>
 </template>
