@@ -11,6 +11,7 @@ export interface Task {
   title: string
   status: WorkflowStatus
   assignee: string | null
+  storyTitle?: string
 }
 
 export interface Story {
@@ -40,6 +41,12 @@ export const useAgileStore = defineStore('agile', () => {
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const lastFetched = ref<Record<string, number | null>>({
+    sprints: null,
+    stories: null,
+    tasks: null,
+    tasks_detailed: null
+  })
 
   // --- GETTERS ---
   const backlogItems = computed(() => stories.value.filter((s) => !s.sprintId || s.status === 'BACKLOG'))
@@ -62,31 +69,82 @@ export const useAgileStore = defineStore('agile', () => {
   const getSprintProgress = (sprintId: string) => computed(() => {
     const sprintTasks = getTasksForSprint(sprintId).value
     if (sprintTasks.length === 0) return 0
-    const done = sprintTasks.filter((t) => t.status === 'DONE').length
-    const inProgress = sprintTasks.filter((t) => t.status === 'IN_PROGRESS').length
+    const done = sprintTasks.filter((t: any) => t.status === 'DONE').length
+    const inProgress = sprintTasks.filter((t: any) => t.status === 'IN_PROGRESS').length
     return Math.round(((done + inProgress * 0.5) / sprintTasks.length) * 100)
   })
 
   // --- API FETCH ---
-  async function fetchData() {
+  const isCacheValid = (key: string) => {
+    const entry = (lastFetched.value as any)[key]
+    return entry && (Date.now() - entry < 60000)
+  }
+
+  async function fetchSprints(force = false) {
+    if (!force && isCacheValid('sprints')) return
     isLoading.value = true
-    error.value = null
     try {
-      const [fetchedSprints, fetchedStories, fetchedTasks] = await Promise.all([
-        apiFetch('/agile/sprints'),
-        apiFetch('/agile/stories'),
-        apiFetch('/agile/tasks')
-      ])
-      
-      sprints.value = (fetchedSprints || []).map((s: any) => ({ ...s, startDate: s.start_date, endDate: s.end_date }))
-      stories.value = (fetchedStories || []).map((s: any) => ({ ...s, sprintId: s.sprint_id, dueDate: s.due_date }))
-      tasks.value = (fetchedTasks || []).map((t: any) => ({ ...t, storyId: t.story_id }))
+      const data = await apiFetch('/agile/sprints')
+      sprints.value = (data || []).map((s: any) => ({ ...s, startDate: s.start_date, endDate: s.end_date }))
+      lastFetched.value.sprints = Date.now()
     } catch (e: any) {
-      error.value = e.message || 'Failed to fetch agile data'
-      console.error(e)
+      error.value = e.message || 'Failed to fetch sprints'
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function fetchStories(force = false) {
+    if (!force && isCacheValid('stories')) return
+    isLoading.value = true
+    try {
+      const data = await apiFetch('/agile/stories')
+      stories.value = (data || []).map((s: any) => ({ ...s, sprintId: s.sprint_id, dueDate: s.due_date }))
+      lastFetched.value.stories = Date.now()
+    } catch (e: any) {
+      error.value = e.message || 'Failed to fetch stories'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchTasks(force = false, detailed = false) {
+    const cacheKey = detailed ? 'tasks_detailed' : 'tasks'
+    if (!force && isCacheValid(cacheKey)) return
+    
+    isLoading.value = true
+    try {
+      const endpoint = detailed ? '/agile/tasks-detailed' : '/agile/tasks'
+      const data = await apiFetch(endpoint)
+      tasks.value = (data || []).map((t: any) => ({ 
+        ...t, 
+        storyId: t.story_id,
+        storyTitle: t.storyTitle // This comes from joined query
+      }))
+      ;(lastFetched.value as any)[cacheKey] = Date.now()
+    } catch (e: any) {
+      error.value = e.message || 'Failed to fetch tasks'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function fetchData(force = false) {
+    await Promise.all([
+      fetchSprints(force),
+      fetchStories(force),
+      fetchTasks(force)
+    ])
+  }
+
+  async function forceRefresh() {
+    await fetchData(true)
+  }
+
+  function forceRefreshEntity(key: string) {
+    if (key === 'sprints') return fetchSprints(true)
+    if (key === 'stories') return fetchStories(true)
+    if (key === 'tasks') return fetchTasks(true)
   }
 
   // --- ACTIONS ---
@@ -182,11 +240,17 @@ export const useAgileStore = defineStore('agile', () => {
     tasks,
     isLoading,
     error,
+    lastFetched,
     backlogItems,
     activeSprint,
     plannedSprints,
     activeSprintTasks,
     fetchData,
+    forceRefresh,
+    fetchSprints,
+    fetchStories,
+    fetchTasks,
+    forceRefreshEntity,
     getStoriesForSprint,
     getTasksForStory,
     getTasksForSprint,

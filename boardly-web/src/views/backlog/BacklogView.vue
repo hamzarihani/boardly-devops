@@ -10,8 +10,11 @@ import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 const { t } = useI18n()
 const agileStore = useAgileStore()
 
-onMounted(() => {
-  agileStore.fetchData()
+onMounted(async () => {
+  await Promise.all([
+    agileStore.fetchSprints(),
+    agileStore.fetchStories()
+  ])
 })
 
 const teamMembers = [
@@ -223,6 +226,14 @@ const statusColors: Record<Story['status'], string> = {
             {{ t('backlog.description') }} (View & Manage Stories)
           </p>
         </div>
+        <button 
+          @click="agileStore.forceRefresh()" 
+          class="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-text/70 hover:bg-card hover:text-text transition h-10 cursor-pointer"
+          title="Force sync data"
+        >
+          <i class="pi pi-sync" :class="{ 'animate-spin': agileStore.isLoading }"></i>
+          <span class="hidden sm:inline">Sync</span>
+        </button>
       </section>
 
       <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-2">

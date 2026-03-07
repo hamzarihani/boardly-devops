@@ -10,8 +10,8 @@ import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 const { t } = useI18n()
 const agileStore = useAgileStore()
 
-onMounted(() => {
-  agileStore.fetchData()
+onMounted(async () => {
+  await agileStore.fetchTasks(false, true)
 })
 
 // Mock current user
@@ -41,16 +41,16 @@ const columns: DataTableColumn[] = [
 ]
 
 const myTasks = computed(() => {
-  return agileStore.tasks.filter(t => t.assignee === currentUser.value)
+  return agileStore.tasks.filter((t: Task) => t.assignee === currentUser.value)
 })
 
-const getStoryTitle = (storyId: string) => {
-  return agileStore.stories.find(s => s.id === storyId)?.title || 'Unassigned Story'
+const getStoryTitle = (task: Task) => {
+  return task.storyTitle || agileStore.stories.find((s: any) => s.id === task.storyId)?.title || 'Unassigned Story'
 }
 
 const filteredTasks = computed(() => {
   const keyword = search.value.trim().toLowerCase()
-  return myTasks.value.filter((task) => {
+  return myTasks.value.filter((task: Task) => {
     const matchesStatus = statusFilter.value === 'ALL' || task.status === statusFilter.value
     const matchesSearch = !keyword || task.title.toLowerCase().includes(keyword)
     return matchesStatus && matchesSearch
@@ -77,7 +77,7 @@ const formTask = ref<TaskForm>({
 
 // Story Dropdown
 const availableStoriesOptions = computed(() => {
-  return agileStore.stories.map(s => ({
+  return agileStore.stories.map((s: any) => ({
     label: s.title,
     value: s.id
   }))
@@ -87,7 +87,12 @@ const availableStoriesOptions = computed(() => {
 const isConfirmDeleteOpen = ref(false)
 const taskToDelete = ref<Task | null>(null)
 
-function openModal(task?: Task) {
+async function openModal(task?: Task) {
+  // Lazy load stories for the modal dropdown if not already loaded
+  if (availableStoriesOptions.value.length === 0) {
+    await agileStore.fetchStories()
+  }
+
   if (task) {
     isEditing.value = true
     editingTaskId.value = task.id
@@ -187,12 +192,22 @@ const statusColors = {
               {{ t('tasks.description') }}
             </p>
           </div>
-          <button
-            @click="openModal()"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 shrink-0 cursor-pointer"
-          >
-            Add Task
-          </button>
+          <div class="flex items-center gap-3">
+            <button 
+              @click="agileStore.forceRefresh()" 
+              class="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-text/70 hover:bg-card hover:text-text transition h-10 cursor-pointer"
+              title="Force sync data"
+            >
+              <i class="pi pi-sync" :class="{ 'animate-spin': agileStore.isLoading }"></i>
+              <span class="hidden sm:inline">Sync</span>
+            </button>
+            <button
+              @click="openModal()"
+              class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 shrink-0 cursor-pointer"
+            >
+              Add Task
+            </button>
+          </div>
         </div>
       </section>
 
@@ -218,7 +233,7 @@ const statusColors = {
         >
           <template #cell-storyTitle="{ row }">
             <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-background border border-border text-text/50">
-                {{ getStoryTitle((row as any).storyId) }}
+                {{ getStoryTitle(row as any) }}
             </span>
           </template>
 

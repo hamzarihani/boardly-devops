@@ -66,6 +66,18 @@ export class AgileService {
     return data;
   }
 
+  async getTasksWithStories() {
+    const { data, error } = await this.supabase
+      .from('tasks')
+      .select('*, stories!inner(title)')
+      .order('created_at', { ascending: false });
+    if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    return data.map((task: any) => ({
+      ...task,
+      storyTitle: task.stories?.title
+    }));
+  }
+
   async createTask(taskDto: any) {
     const { data, error } = await this.supabase.from('tasks').insert(taskDto).select().single();
     if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);

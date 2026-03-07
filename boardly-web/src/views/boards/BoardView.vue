@@ -16,8 +16,8 @@ interface Column {
 const { t } = useI18n()
 const agileStore = useAgileStore()
 
-onMounted(() => {
-  agileStore.fetchData()
+onMounted(async () => {
+  await agileStore.fetchData()
 })
 
 const columns: Column[] = [
@@ -38,14 +38,14 @@ const teamMembers = [
 const currentAssigneeFilter = ref('ALL')
 const assigneeOptions = [
   { label: 'All Assignees', value: 'ALL' },
-  ...teamMembers.filter(m => m.label !== 'Unassigned')
+  ...teamMembers.filter((m: any) => m.label !== 'Unassigned')
 ]
 
 // Computed tasks for the board
 const boardTasks = computed(() => {
   let tasks = agileStore.activeSprintTasks
   if (currentAssigneeFilter.value !== 'ALL') {
-    tasks = tasks.filter(t => t.assignee === currentAssigneeFilter.value)
+    tasks = tasks.filter((t: Task) => t.assignee === currentAssigneeFilter.value)
   }
   return tasks
 })
@@ -251,6 +251,14 @@ async function deleteTask() {
           <p class="text-sm text-text/60 font-medium">Sprint execution and task tracking.</p>
         </div>
         <div class="flex items-center gap-3">
+          <button 
+            @click="agileStore.forceRefresh()" 
+            class="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-text/70 hover:bg-card hover:text-text transition h-10 cursor-pointer"
+            title="Force sync data"
+          >
+            <i class="pi pi-sync" :class="{ 'animate-spin': agileStore.isLoading }"></i>
+            <span class="hidden sm:inline">Sync</span>
+          </button>
           <div class="w-48 hidden sm:block">
             <BaseSelectField v-model="currentAssigneeFilter" :options="assigneeOptions" />
           </div>

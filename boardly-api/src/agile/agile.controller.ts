@@ -53,6 +53,11 @@ export class AgileController {
     return this.agileService.getTasks();
   }
 
+  @Get('tasks-detailed')
+  getTasksDetailed() {
+    return this.agileService.getTasksWithStories();
+  }
+
   @Post('tasks')
   createTask(@Body() taskDto: any) {
     return this.agileService.createTask(taskDto);

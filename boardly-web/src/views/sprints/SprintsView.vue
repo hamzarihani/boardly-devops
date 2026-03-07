@@ -9,8 +9,8 @@ import BaseDatePickerField from '@/components/ui/BaseDatePickerField.vue'
 const { t } = useI18n()
 const agileStore = useAgileStore()
 
-onMounted(() => {
-  agileStore.fetchData()
+onMounted(async () => {
+  await agileStore.fetchData()
 })
 
 const columns: DataTableColumn[] = [
@@ -89,9 +89,19 @@ const priorityColors = {
             </h1>
             <p class="mt-1 text-sm text-text/70">{{ t('sprints.description') }} (View & Manage Sprint Cycles)</p>
           </div>
-          <button @click="openModal" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 cursor-pointer">
-            Create Sprint
-          </button>
+          <div class="flex items-center gap-3">
+            <button 
+              @click="agileStore.forceRefresh()" 
+              class="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-text/70 hover:bg-card hover:text-text transition h-10 cursor-pointer"
+              title="Force sync data"
+            >
+              <i class="pi pi-sync" :class="{ 'animate-spin': agileStore.isLoading }"></i>
+              <span class="hidden sm:inline">Sync</span>
+            </button>
+            <button @click="openModal" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition shadow-sm h-10 cursor-pointer">
+              Create Sprint
+            </button>
+          </div>
         </div>
       </section>
 
