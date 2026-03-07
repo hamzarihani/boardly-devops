@@ -11,7 +11,7 @@ export class AgileService {
 
   // --- SPRINTS ---
   async getSprints() {
-    const { data, error } = await this.supabase.from('sprints').select('*').order('created_at', { ascending: false });
+    const { data, error } = await this.supabase.from('sprints').select('*').order('start_date', { ascending: true });
     if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     return data;
   }

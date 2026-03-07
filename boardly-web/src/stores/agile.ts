@@ -115,6 +115,18 @@ export const useAgileStore = defineStore('agile', () => {
     sprints.value = sprints.value.filter(s => s.id !== id)
   }
 
+  async function startSprint(id: string) {
+    // Optional: Complete current active sprint before starting new one
+    if (activeSprint.value) {
+      await updateSprint(activeSprint.value.id, { status: 'COMPLETED' })
+    }
+    await updateSprint(id, { status: 'ACTIVE' })
+  }
+
+  async function completeSprint(id: string) {
+    await updateSprint(id, { status: 'COMPLETED' })
+  }
+
   async function addStory(story: Omit<Story, 'id'>) {
     const payload = { ...story, sprint_id: story.sprintId, due_date: story.dueDate }
     delete (payload as any).sprintId
@@ -180,6 +192,10 @@ export const useAgileStore = defineStore('agile', () => {
     getTasksForSprint,
     getSprintProgress,
     addSprint,
+    updateSprint,
+    deleteSprint,
+    startSprint,
+    completeSprint,
     addStory,
     updateStory,
     deleteStory,

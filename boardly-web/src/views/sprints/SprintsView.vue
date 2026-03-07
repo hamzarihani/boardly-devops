@@ -109,9 +109,17 @@ const priorityColors = {
                 </div>
                 <p class="text-sm text-text/60">{{ agileStore.activeSprint.startDate }} — {{ agileStore.activeSprint.endDate }}</p>
               </div>
-              <div class="text-right">
-                <span class="text-3xl font-bold text-primary">{{ agileStore.getSprintProgress(agileStore.activeSprint.id).value }}%</span>
-                <p class="text-xs font-semibold uppercase tracking-wider text-text/40">Task Completion</p>
+              <div class="flex flex-col items-end gap-3">
+                <button 
+                  @click="agileStore.completeSprint(agileStore.activeSprint.id)"
+                  class="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:text-white transition cursor-pointer"
+                >
+                  Complete Sprint
+                </button>
+                <div class="text-right">
+                  <span class="text-3xl font-bold text-primary">{{ agileStore.getSprintProgress(agileStore.activeSprint.id).value }}%</span>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-text/40">Task Completion</p>
+                </div>
               </div>
             </div>
 
@@ -178,9 +186,17 @@ const priorityColors = {
                   <span class="text-[10px] uppercase font-black tracking-widest bg-blue-500/10 text-blue-500 px-2 rounded">Planned</span>
                 </div>
                 <p class="text-[11px] text-text/50 font-mono tracking-wide">{{ sprint.startDate }} to {{ sprint.endDate }}</p>
-                <div class="mt-3 text-xs text-text/60 border-t border-border/50 pt-2 flex items-center gap-2">
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                  <span>{{ agileStore.getStoriesForSprint(sprint.id).value.length }} Assigned Stories</span>
+                <div class="mt-3 text-xs text-text/60 border-t border-border/50 pt-3 flex items-center justify-between group">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>{{ agileStore.getStoriesForSprint(sprint.id).value.length }} Stories</span>
+                  </div>
+                  <button 
+                    @click="agileStore.startSprint(sprint.id)"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-primary px-2.5 py-1 text-[10px] font-bold text-white hover:bg-primary/90 cursor-pointer shadow-sm"
+                  >
+                    Start Sprint
+                  </button>
                 </div>
               </div>
             </div>
