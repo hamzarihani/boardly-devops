@@ -321,6 +321,7 @@ export class TeamService {
     const message = error.message?.toLowerCase() ?? '';
     return (
       message.includes('column users.full_name does not exist') ||
+      message.includes("could not find the 'full_name' column of 'users' in the schema cache") ||
       (message.includes('full_name') && message.includes('does not exist'))
     );
   }
