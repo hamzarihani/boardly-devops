@@ -3,24 +3,32 @@ import { computed, ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
 import { useAgileStore, type Task, type WorkflowStatus } from '@/stores/agile'
+import { useTeamStore } from '@/stores/team'
 import BaseDataTable, { type DataTableColumn } from '@/components/ui/BaseDataTable.vue'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 
 const { t } = useI18n()
 const agileStore = useAgileStore()
+const teamStore = useTeamStore()
 
 onMounted(async () => {
-  await agileStore.fetchTasks(false, true)
+  await Promise.all([
+    agileStore.fetchTasks(false, true),
+    teamStore.fetchMembers()
+  ])
+  
+  if (!currentUser.value && teamStore.members.length > 0) {
+    currentUser.value = teamStore.members[0]?.full_name || ''
+  }
 })
 
-// Mock current user
-const currentUserOptions = [
-  { label: 'Hamza R.', value: 'Hamza R.' },
-  { label: 'Jane D.', value: 'Jane D.' },
-  { label: 'Alex K.', value: 'Alex K.' }
-]
-const currentUser = ref('Hamza R.')
+// Real team members for current user selection (dev/demo aid)
+const currentUserOptions = computed(() => teamStore.members.map(m => ({
+  label: m.full_name,
+  value: m.full_name
+})))
+const currentUser = ref('')
 
 // Filters
 const search = ref('')

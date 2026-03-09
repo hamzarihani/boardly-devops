@@ -4,6 +4,7 @@ import { ref, computed, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
 import { useAgileStore, type Task, type WorkflowStatus } from '@/stores/agile'
+import { useTeamStore } from '@/stores/team'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 
@@ -15,9 +16,13 @@ interface Column {
 
 const { t } = useI18n()
 const agileStore = useAgileStore()
+const teamStore = useTeamStore()
 
 onMounted(async () => {
-  await agileStore.fetchData()
+  await Promise.all([
+    agileStore.fetchData(),
+    teamStore.fetchMembers()
+  ])
 })
 
 const columns: Column[] = [
@@ -26,20 +31,15 @@ const columns: Column[] = [
   { id: 'DONE', title: 'Done', color: 'bg-emerald-500/10 text-emerald-600' },
 ]
 
-// Team members for mock assignment
-const teamMembers = [
-  { label: 'Unassigned', value: '' },
-  { label: 'Hamza R.', value: 'Hamza R.' },
-  { label: 'Jane D.', value: 'Jane D.' },
-  { label: 'Alex K.', value: 'Alex K.' },
-]
+// Real team members from store
+const teamMembers = computed(() => teamStore.memberOptions)
 
 // Assignee Filter
 const currentAssigneeFilter = ref('ALL')
-const assigneeOptions = [
+const assigneeOptions = computed(() => [
   { label: 'All Assignees', value: 'ALL' },
-  ...teamMembers.filter((m: any) => m.label !== 'Unassigned')
-]
+  ...teamMembers.value.filter((m: any) => m.label !== 'Unassigned')
+])
 
 // Computed tasks for the board
 const boardTasks = computed(() => {

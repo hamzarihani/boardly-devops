@@ -3,27 +3,24 @@ import { computed, ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
 import { useAgileStore, type Story } from '@/stores/agile'
+import { useTeamStore } from '@/stores/team'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/ui/BaseDataTable.vue'
 import BaseConfirmDialog from '@/components/ui/BaseConfirmDialog.vue'
 
 const { t } = useI18n()
 const agileStore = useAgileStore()
+const teamStore = useTeamStore()
 
 onMounted(async () => {
   await Promise.all([
     agileStore.fetchSprints(),
-    agileStore.fetchStories()
+    agileStore.fetchStories(),
+    teamStore.fetchMembers()
   ])
 })
 
-const teamMembers = [
-  { label: 'Unassigned', value: '' },
-  { label: 'Hamza R.', value: 'Hamza R.' },
-  { label: 'Jane D.', value: 'Jane D.' },
-  { label: 'Alex K.', value: 'Alex K.' },
-  { label: 'Sarah M.', value: 'Sarah M.' },
-]
+const teamMembers = computed(() => teamStore.memberOptions)
 
 // Filters
 const search = ref('')

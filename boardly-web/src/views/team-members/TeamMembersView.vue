@@ -4,36 +4,16 @@ import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/i18n'
 import BaseSelectField from '@/components/ui/BaseSelectField.vue'
 import BaseDataTable, { type DataTableColumn } from '@/components/ui/BaseDataTable.vue'
-import { apiFetch } from '@/lib/api'
-
-type MemberRole = 'ADMIN' | 'MEMBER'
-type MemberStatus = 'ACTIVE'
-
-interface TeamMember {
-  id: string
-  name: string
-  email: string
-  role: MemberRole
-  status: MemberStatus
-  createdAt: string
-}
-
-interface TeamMemberActionRow {
-  id: string
-  name: string
-  email: string
-  role: MemberRole
-}
+import { useTeamStore, type TeamMember } from '@/stores/team'
 
 const { t } = useI18n()
+const teamStore = useTeamStore()
 
-const loading = ref(true)
 const errorMsg = ref<string | null>(null)
 const successMsg = ref<string | null>(null)
-const actionLoading = ref(false)
 const tempPassword = ref<string | null>(null)
 const search = ref('')
-const selectedRole = ref<'ALL' | MemberRole>('ALL')
+const selectedRole = ref<'ALL' | 'ADMIN' | 'MEMBER'>('ALL')
 const roleOptions = [
   { label: 'All roles', value: 'ALL' },
   { label: 'Admin', value: 'ADMIN' },
@@ -44,12 +24,11 @@ const memberRoleOptions = [
   { label: 'Member', value: 'MEMBER' },
 ]
 
-const members = ref<TeamMember[]>([])
 const editingMemberId = ref<string | null>(null)
 const isMemberModalOpen = ref(false)
 const formName = ref('')
 const formEmail = ref('')
-const formRole = ref<MemberRole>('MEMBER')
+const formRole = ref<'ADMIN' | 'MEMBER'>('MEMBER')
 
 const columns: DataTableColumn[] = [
   { key: 'name', label: 'Name', cellClass: 'font-medium text-text' },
@@ -62,32 +41,19 @@ const columns: DataTableColumn[] = [
 const filteredMembers = computed(() => {
   const keyword = search.value.trim().toLowerCase()
 
-  return members.value.filter((member) => {
+  return teamStore.members.filter((member) => {
     const matchesRole = selectedRole.value === 'ALL' || member.role === selectedRole.value
     const matchesSearch =
       !keyword ||
-      member.name.toLowerCase().includes(keyword) ||
+      (member.full_name || '').toLowerCase().includes(keyword) ||
       member.email.toLowerCase().includes(keyword)
     return matchesRole && matchesSearch
   })
 })
 
 onMounted(async () => {
-  await loadMembers()
+  await teamStore.fetchMembers()
 })
-
-async function loadMembers() {
-  try {
-    loading.value = true
-    errorMsg.value = null
-    const data = await apiFetch('/team/members')
-    members.value = data as TeamMember[]
-  } catch (error: unknown) {
-    errorMsg.value = error instanceof Error ? error.message : 'Failed to load team members.'
-  } finally {
-    loading.value = false
-  }
-}
 
 function resetForm() {
   formName.value = ''
@@ -104,14 +70,11 @@ function openCreateModal() {
   successMsg.value = null
 }
 
-function startEdit(row: Record<string, unknown>) {
-  const member = toMemberActionRow(row)
-  if (!member) return
-
-  editingMemberId.value = member.id
-  formName.value = member.name
-  formEmail.value = member.email
-  formRole.value = member.role
+function startEdit(row: any) {
+  editingMemberId.value = row.id
+  formName.value = row.name
+  formEmail.value = row.email
+  formRole.value = row.role
   isMemberModalOpen.value = true
   tempPassword.value = null
   successMsg.value = null
@@ -124,7 +87,6 @@ function cancelEdit() {
 }
 
 async function saveMember() {
-  actionLoading.value = true
   errorMsg.value = null
   successMsg.value = null
   tempPassword.value = null
@@ -137,66 +99,37 @@ async function saveMember() {
     }
 
     if (editingMemberId.value) {
-      await apiFetch(`/team/members/${editingMemberId.value}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      })
+      await teamStore.updateMember(editingMemberId.value, payload)
       successMsg.value = 'Team member updated successfully.'
     } else {
-      const response = await apiFetch('/team/members', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      const created = response as { temporaryPassword?: string }
+      const created = await teamStore.createMember(payload)
       tempPassword.value = created.temporaryPassword ?? null
       successMsg.value = 'Team member added successfully.'
     }
 
-    await loadMembers()
     isMemberModalOpen.value = false
     resetForm()
-  } catch (error: unknown) {
-    errorMsg.value = error instanceof Error ? error.message : 'Failed to save team member.'
-  } finally {
-    actionLoading.value = false
+  } catch (error: any) {
+    errorMsg.value = error.message || 'Failed to save team member.'
   }
 }
 
-async function removeMember(row: Record<string, unknown>) {
-  const member = toMemberActionRow(row)
-  if (!member) return
-
-  const confirmed = window.confirm(`Delete ${member.email}?`)
+async function removeMember(row: any) {
+  const confirmed = window.confirm(`Delete ${row.email}?`)
   if (!confirmed) return
 
-  actionLoading.value = true
   errorMsg.value = null
   successMsg.value = null
 
   try {
-    await apiFetch(`/team/members/${member.id}`, { method: 'DELETE' })
+    await teamStore.deleteMember(row.id)
     successMsg.value = 'Team member deleted successfully.'
-    await loadMembers()
-
-    if (editingMemberId.value === member.id) {
+    if (editingMemberId.value === row.id) {
       resetForm()
     }
-  } catch (error: unknown) {
-    errorMsg.value = error instanceof Error ? error.message : 'Failed to delete team member.'
-  } finally {
-    actionLoading.value = false
+  } catch (error: any) {
+    errorMsg.value = error.message || 'Failed to delete team member.'
   }
-}
-
-function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | null {
-  const id = typeof row.id === 'string' ? row.id : null
-  const name = typeof row.name === 'string' ? row.name : null
-  const email = typeof row.email === 'string' ? row.email : null
-  const role = row.role === 'ADMIN' || row.role === 'MEMBER' ? row.role : null
-
-  if (!id || !name || !email || !role) return null
-
-  return { id, name, email, role }
 }
 </script>
 
@@ -211,7 +144,7 @@ function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | 
       </section>
 
       <section
-        v-if="loading"
+        v-if="teamStore.isLoading"
         class="rounded-xl border border-border bg-card p-4 text-sm text-text/70"
       >
         Loading team members...
@@ -255,7 +188,7 @@ function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | 
           </div>
           <button
             type="button"
-            :disabled="actionLoading"
+            :disabled="teamStore.isLoading"
             @click="openCreateModal"
             class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
           >
@@ -295,7 +228,7 @@ function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | 
               <div class="flex items-center gap-2">
                 <button
                   type="button"
-                  :disabled="actionLoading"
+                  :disabled="teamStore.isLoading"
                   @click="startEdit(row)"
                   class="text-xs font-medium text-primary hover:underline disabled:opacity-60"
                 >
@@ -303,7 +236,7 @@ function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | 
                 </button>
                 <button
                   type="button"
-                  :disabled="actionLoading"
+                  :disabled="teamStore.isLoading"
                   @click="removeMember(row)"
                   class="text-xs font-medium text-red-600 hover:underline disabled:opacity-60"
                 >
@@ -356,7 +289,7 @@ function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | 
           <div class="mt-5 flex justify-end gap-2">
             <button
               type="button"
-              :disabled="actionLoading"
+              :disabled="teamStore.isLoading"
               @click="cancelEdit"
               class="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-text hover:bg-background/80"
             >
@@ -364,11 +297,11 @@ function toMemberActionRow(row: Record<string, unknown>): TeamMemberActionRow | 
             </button>
             <button
               type="button"
-              :disabled="actionLoading"
+              :disabled="teamStore.isLoading"
               @click="saveMember"
               class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {{ actionLoading ? 'Saving...' : (editingMemberId ? 'Update' : 'Create') }}
+              {{ teamStore.isLoading ? 'Saving...' : (editingMemberId ? 'Update' : 'Create') }}
             </button>
           </div>
         </div>
