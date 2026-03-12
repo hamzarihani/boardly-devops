@@ -190,7 +190,7 @@ async function removeMember(row: any) {
             type="button"
             :disabled="teamStore.isLoading"
             @click="openCreateModal"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Add Member
           </button>
@@ -230,7 +230,7 @@ async function removeMember(row: any) {
                   type="button"
                   :disabled="teamStore.isLoading"
                   @click="startEdit(row)"
-                  class="text-xs font-medium text-primary hover:underline disabled:opacity-60"
+                  class="text-xs font-medium text-primary hover:underline cursor-pointer disabled:opacity-60"
                 >
                   Edit
                 </button>
@@ -238,7 +238,7 @@ async function removeMember(row: any) {
                   type="button"
                   :disabled="teamStore.isLoading"
                   @click="removeMember(row)"
-                  class="text-xs font-medium text-red-600 hover:underline disabled:opacity-60"
+                  class="text-xs font-medium text-red-600 hover:underline cursor-pointer disabled:opacity-60"
                 >
                   Delete
                 </button>
@@ -260,7 +260,7 @@ async function removeMember(row: any) {
             </h3>
             <button
               type="button"
-              class="text-text/70 hover:text-text"
+              class="text-text/70 hover:text-text cursor-pointer"
               @click="cancelEdit"
             >
               ✕
@@ -291,7 +291,7 @@ async function removeMember(row: any) {
               type="button"
               :disabled="teamStore.isLoading"
               @click="cancelEdit"
-              class="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-text hover:bg-background/80"
+              class="rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-text hover:bg-background/80 cursor-pointer"
             >
               Cancel
             </button>
@@ -299,7 +299,7 @@ async function removeMember(row: any) {
               type="button"
               :disabled="teamStore.isLoading"
               @click="saveMember"
-              class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+              class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {{ teamStore.isLoading ? 'Saving...' : (editingMemberId ? 'Update' : 'Create') }}
             </button>
