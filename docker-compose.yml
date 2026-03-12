@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: ./boardly-api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./boardly-api/.env
+    restart: always
+
+  web:
+    build:
+      context: ./boardly-web
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    env_file:
+      - ./boardly-web/.env
+    restart: always
+    depends_on:
+      - api
