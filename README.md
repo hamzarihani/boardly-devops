@@ -2,6 +2,23 @@
 
 Boardly is a modern, premium project management and Kanban board application. This repository contains the source code for both the backend API and the frontend web application, orchestrated with Docker.
 
+## 🚀 Live Demo
+
+Experience Boardly live: **[boardly-devops.vercel.app](https://boardly-devops.vercel.app)**
+
+### Demo Credentials
+- **Email**: `demo@upliftz.com`
+- **Password**: `Boardly!4wjs3rtlA1`
+
+---
+
+<p align="center">
+  <img src="./docs/images/login.png" width="45%" alt="Login Page" />
+  <img src="./docs/images/dashboard.png" width="45%" alt="Dashboard" />
+</p>
+
+---
+
 ## Project Structure
 
 The project is divided into two main components:
