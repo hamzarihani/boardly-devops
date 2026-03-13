@@ -7,6 +7,7 @@ import { useI18n } from '@/i18n'
 
 const email = ref<string>('')
 const password = ref<string>('')
+const showPassword = ref(false)
 const errorMsg = ref<string | null>(null)
 const loading = ref(false)
 const router = useRouter()
@@ -58,14 +59,24 @@ function useDemo() {
 
           <div>
             <label class="block text-sm font-medium text-text/80 mb-1">{{ t('auth.password') }}</label>
-            <input
-              v-model="password"
-              type="password"
-              :disabled="loading"
-              class="w-full px-4 py-2 bg-background border border-border text-text rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
-              placeholder="••••••••"
-              required
-            />
+            <div class="relative">
+              <input
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                :disabled="loading"
+                class="w-full px-4 py-2 bg-background border border-border text-text rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50 pr-10"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-text/40 hover:text-text/60 transition-colors cursor-pointer"
+              >
+                <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.12 13.12 0 0 1-1.19 2.15"></path><path d="M3 3l18 18"></path><path d="M17.06 17.06A8.5 8.5 0 0 1 12 19c-7 0-10-7-10-7a13.13 13.13 0 0 1 1.66-2.04"></path></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center justify-between">
