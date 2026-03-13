@@ -6,9 +6,38 @@
     <link rel="alternate icon" href="/favicon.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boardly DevOps</title>
+    <style>
+      .initial-loader-container {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        z-index: 9999;
+      }
+      .initial-loader {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e2e8f0;
+        border-bottom-color: #6366f1;
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+      }
+      @keyframes rotation {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div class="initial-loader-container">
+        <span class="initial-loader"></span>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
