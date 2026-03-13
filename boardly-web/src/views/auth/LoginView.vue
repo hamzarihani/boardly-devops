@@ -27,6 +27,11 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+function useDemo() {
+  email.value = 'demo@upliftz.com'
+  password.value = 'Boardly!4wjs3rtlA1'
+}
 </script>
 
 <template>
@@ -82,6 +87,32 @@ async function handleLogin() {
             {{ loading ? t('common.loading') : t('auth.signIn') }}
           </button>
         </form>
+
+        <!-- Demo Account Section -->
+        <div class="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-primary flex items-center gap-2">
+              <span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+              {{ t('auth.demoAccount') }}
+            </h3>
+            <button 
+              @click="useDemo"
+              class="text-xs font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
+            >
+              {{ t('auth.useDemo') }}
+            </button>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-text/60">{{ t('auth.demoEmail') }}:</span>
+              <span class="font-mono text-text/90 select-all">demo@upliftz.com</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-text/60">{{ t('auth.demoPassword') }}:</span>
+              <span class="font-mono text-text/90 select-all">Boardly!4wjs3rtlA1</span>
+            </div>
+          </div>
+        </div>
 
         <div class="mt-6 text-center text-sm text-text/60">
           {{ t('auth.noAccount') }}

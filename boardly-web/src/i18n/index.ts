@@ -58,6 +58,10 @@ type MessageKey =
   | 'dashboard.activity.joined'
   | 'dashboard.tasksByStatus'
   | 'dashboard.workload'
+  | 'auth.demoAccount'
+  | 'auth.demoEmail'
+  | 'auth.demoPassword'
+  | 'auth.useDemo'
 
 type MessageTable = Record<MessageKey, string>
 
@@ -118,6 +122,10 @@ const messages: Record<Locale, MessageTable> = {
     'dashboard.activity.joined': 'joined the team',
     'dashboard.tasksByStatus': 'Tasks by Status',
     'dashboard.workload': 'Workload Distribution',
+    'auth.demoAccount': 'Demo Account',
+    'auth.demoEmail': 'Email',
+    'auth.demoPassword': 'Password',
+    'auth.useDemo': 'Click here to use demo credentials',
   },
   fr: {
     'app.name': 'Boardly DevOps',
@@ -175,6 +183,10 @@ const messages: Record<Locale, MessageTable> = {
     'dashboard.activity.joined': 'a rejoint l\'équipe',
     'dashboard.tasksByStatus': 'Tâches par Statut',
     'dashboard.workload': 'Répartition de la Charge de Travail',
+    'auth.demoAccount': 'Compte de Démo',
+    'auth.demoEmail': 'E-mail',
+    'auth.demoPassword': 'Mot de passe',
+    'auth.useDemo': 'Cliquez ici pour utiliser les identifiants de démo',
   },
   ar: {
     'app.name': 'Boardly DevOps',
@@ -232,6 +244,10 @@ const messages: Record<Locale, MessageTable> = {
     'dashboard.activity.joined': 'انضم إلى الفريق',
     'dashboard.tasksByStatus': 'المهام حسب الحالة',
     'dashboard.workload': 'توزيع عبء العمل',
+    'auth.demoAccount': 'حساب تجريبي',
+    'auth.demoEmail': 'البريد الإلكتروني',
+    'auth.demoPassword': 'كلمة المرور',
+    'auth.useDemo': 'انقر هنا لاستخدام بيانات الاعتماد التجريبية',
   },
 }
 
