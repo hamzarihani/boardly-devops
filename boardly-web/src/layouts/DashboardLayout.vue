@@ -4,11 +4,13 @@ import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { useUIStore } from '@/stores/ui'
 import { useI18n, type Locale } from '@/i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
+const uiStore = useUIStore()
 const isUserMenuOpen = ref(false)
 const isLanguageMenuOpen = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
@@ -69,8 +71,8 @@ onUnmounted(() => {
       <div class="px-3 py-3 lg:px-5 lg:pl-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center justify-start rtl:justify-end">
-            <button data-drawer-target="top-bar-sidebar" data-drawer-toggle="top-bar-sidebar"
-              aria-controls="top-bar-sidebar" type="button"
+            <button @click="uiStore.toggleSidebar"
+              type="button"
               class="sm:hidden text-text bg-transparent box-border border border-transparent hover:bg-card/80 focus:ring-4 focus:ring-primary/40 font-medium leading-5 rounded-lg text-sm p-2 focus:outline-none">
               <span class="sr-only">{{ t('common.openSidebar') }}</span>
               <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -135,7 +137,7 @@ onUnmounted(() => {
                 <button type="button"
                   @click="toggleUserMenu"
                   :aria-expanded="isUserMenuOpen"
-                  class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
+                  class="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 cursor-pointer"
                   aria-controls="dropdown-user">
                   <span class="sr-only">{{ t('common.openUserMenu') }}</span>
                   <img class="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
@@ -167,7 +169,7 @@ onUnmounted(() => {
                   </li>
                   <li>
                     <button type="button" @click="handleLogout"
-                      class="inline-flex items-center w-full p-2 hover:bg-background/80 hover:text-text rounded text-start"
+                      class="inline-flex items-center w-full p-2 cursor-pointer hover:bg-background/80 hover:text-text rounded text-start"
                       role="menuitem">{{ t('menu.signOut') }}</button>
                   </li>
                 </ul>
@@ -180,8 +182,14 @@ onUnmounted(() => {
 
     <AppSidebar></AppSidebar>
     
+    <!-- Mobile Sidebar Overlay -->
+    <div v-if="uiStore.isSidebarOpen" 
+      @click="uiStore.closeSidebar"
+      class="fixed inset-0 z-30 bg-gray-900/50 sm:hidden"
+    ></div>
+    
     <!-- Main -->
-    <div class="p-4 sm:ms-64 mt-14 w-full overflow-auto h-[calc(100vh-56px)]">
+    <div class="p-4 sm:ms-64 mt-14 w-full overflow-auto h-[calc(100dvh-56px)]">
       <slot />
     </div>
   </div>

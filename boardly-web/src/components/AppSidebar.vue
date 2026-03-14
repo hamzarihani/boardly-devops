@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUIStore } from '@/stores/ui'
 import { useI18n } from '@/i18n'
 
 type MenuLabelKey =
@@ -27,8 +28,11 @@ interface MenuSection {
 }
 
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+const isRTL = computed(() => locale.value === 'ar')
 
 const sections: MenuSection[] = [
   {
@@ -87,7 +91,8 @@ function logout() {
 </script>
 <template>
   <aside id="top-bar-sidebar"
-      class="fixed top-0 [inset-inline-start:0] z-40 w-64 h-full transition-transform -translate-x-full rtl:translate-x-0 sm:translate-x-0"
+      class="fixed top-0 [inset-inline-start:0] z-40 w-64 h-full transition-transform sm:translate-x-0"
+      :class="uiStore.isSidebarOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')"
       aria-label="Sidebar">
     <div class="flex flex-col justify-between h-full px-3 py-4 pt-20 overflow-y-auto bg-background border-e border-border">
 
@@ -101,6 +106,7 @@ function logout() {
               v-for="item in section.items"
               :key="item.to"
               :to="item.to"
+              @click="uiStore.closeSidebar"
               class="flex items-center gap-3 px-4 py-2 rounded-lg transition"
               :class="isActive(item.to) ? 'bg-primary text-amber-50' : 'hover:bg-primary/30'"
             >
