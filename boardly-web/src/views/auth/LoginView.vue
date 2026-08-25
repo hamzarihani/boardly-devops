@@ -30,7 +30,7 @@ async function handleLogin() {
 }
 
 function useDemo() {
-  email.value = 'demo@upliftz.com'
+  email.value = 'demo@yopmail.com'
   password.value = 'Boardly!4wjs3rtlA1'
 }
 </script>
@@ -116,7 +116,7 @@ function useDemo() {
           <div class="space-y-1.5">
             <div class="flex items-center justify-between text-xs">
               <span class="text-text/60">{{ t('auth.demoEmail') }}:</span>
-              <span class="font-mono text-text/90 select-all">demo@upliftz.com</span>
+              <span class="font-mono text-text/90 select-all">demo@yopmail.com</span>
             </div>
             <div class="flex items-center justify-between text-xs">
               <span class="text-text/60">{{ t('auth.demoPassword') }}:</span>

@@ -7,7 +7,7 @@ Boardly is a modern, premium project management and Kanban board application. Th
 Experience Boardly live: **[boardly-devops.vercel.app](https://boardly-devops.vercel.app)**
 
 ### Demo Credentials
-- **Email**: `demo@upliftz.com`
+- **Email**: `demo@yopmail.com`
 - **Password**: `Boardly!4wjs3rtlA1`
 
 ---
