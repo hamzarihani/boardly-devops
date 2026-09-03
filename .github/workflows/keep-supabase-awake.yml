@@ -13,6 +13,8 @@ jobs:
       - name: Ping Supabase API
         run: |
           echo "Pinging Supabase to keep project active..."
-          curl -s --fail "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          # We remove --fail and add || true so the workflow doesn't fail 
+          # even if Supabase returns an error (like 503 if already paused)
+          curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" || true
